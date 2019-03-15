@@ -8,6 +8,7 @@ __RCSID__ = "$Id$"
 import os
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities.Time import queryTime
+import Utilities
 
 
 class DirectoryMetadata:
@@ -27,22 +28,25 @@ class DirectoryMetadata:
   def addMetadataField(self, pname, ptype, credDict):
     """ Add a new metadata parameter to the Metadata Database.
         pname - parameter name, ptype - parameter type in the MySQL notation
+        Modified to use fully qualified metadata names.
     """
-
+    # existing pnames are fully qualified, so
+    fqPname = Utilities.fqMetaName(pname, credDict)
     result = self.db.fmeta.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
-    if pname in result['Value'].keys():
+    if fqPname in result['Value'].keys():
       return S_ERROR('The metadata %s is already defined for Files' % pname)
 
     result = self.getMetadataFields(credDict)
     if not result['OK']:
       return result
-    if pname in result['Value'].keys():
-      if ptype.lower() == result['Value'][pname].lower():
+
+    if fqPname in result['Value'].keys():
+      if ptype.lower() == result['Value'][fqPname].lower():
         return S_OK('Already exists')
       return S_ERROR('Attempt to add an existing metadata with different type: %s/%s' %
-                     (ptype, result['Value'][pname]))
+                     (ptype, result['Value'][fqPname]))
 
     valueType = ptype
     if ptype.lower()[:3] == 'int':
@@ -57,26 +61,27 @@ class DirectoryMetadata:
       valueType = "VARCHAR(64)"
 
     req = "CREATE TABLE FC_Meta_%s ( DirID INTEGER NOT NULL, Value %s, PRIMARY KEY (DirID), INDEX (Value) )" \
-        % (pname, valueType)
+        % (fqPname, valueType)
     result = self.db._query(req)
     if not result['OK']:
       return result
 
-    result = self.db.insertFields('FC_MetaFields', ['MetaName', 'MetaType'], [pname, ptype])
+    result = self.db.insertFields('FC_MetaFields', ['MetaName', 'MetaType'], [fqPname, ptype])
     if not result['OK']:
       return result
 
     metadataID = result['lastRowId']
-    result = self.__transformMetaParameterToData(pname)
+    result = self.__transformMetaParameterToData(fqPname)
     if not result['OK']:
       return result
 
     return S_OK("Added new metadata: %d" % metadataID)
 
-  def deleteMetadataField(self, pname, credDict):
-    """ Remove metadata field
+  def deleteMetadataField(self, r_pname, credDict):
+    """ Remove metadata field.
+        Table name is now fully qualified
     """
-
+    pname = Utilities.fqMetaName(r_pname, credDict)
     req = "DROP TABLE FC_Meta_%s" % pname
     result = self.db._update(req)
     error = ''
@@ -189,18 +194,19 @@ class DirectoryMetadata:
       return dirmeta
 
     for metaName, metaValue in metadict.items():
-      if metaName not in metaFields:
+      fqMetaName = Utilities.fqMetaName(metaName, credDict)
+      if fqMetaName not in metaFields:
         result = self.setMetaParameter(dpath, metaName, metaValue, credDict)
         if not result['OK']:
           return result
         continue
       # Check that the metadata is not defined for the parent directories
-      if metaName in dirmeta['Value']:
+      if fqMetaName in dirmeta['Value']:
         return S_ERROR('Metadata conflict detected for %s for directory %s' % (metaName, dpath))
-      result = self.db.insertFields('FC_Meta_%s' % metaName, ['DirID', 'Value'], [dirID, metaValue])
+      result = self.db.insertFields('FC_Meta_%s' % fqMetaName, ['DirID', 'Value'], [dirID, metaValue])
       if not result['OK']:
         if result['Message'].find('Duplicate') != -1:
-          req = "UPDATE FC_Meta_%s SET Value='%s' WHERE DirID=%d" % (metaName, metaValue, dirID)
+          req = "UPDATE FC_Meta_%s SET Value='%s' WHERE DirID=%d" % (fqMetaName, metaValue, dirID)
           result = self.db._update(req)
           if not result['OK']:
             return result
@@ -248,7 +254,8 @@ class DirectoryMetadata:
 
   def setMetaParameter(self, dpath, metaName, metaValue, credDict):
     """ Set an meta parameter - metadata which is not used in the the data
-        search operations
+        search operations.
+        Modified by JM: make metaName Dirac group aware.
     """
     result = self.db.dtree.findDir(dpath)
     if not result['OK']:
@@ -259,7 +266,7 @@ class DirectoryMetadata:
 
     result = self.db.insertFields('FC_DirMeta',
                                   ['DirID', 'MetaKey', 'MetaValue'],
-                                  [dirID, metaName, str(metaValue)])
+                                  [dirID, Utilities.fqMetaName(metaName, credDict), str(metaValue)])
     return result
 
   def getDirectoryMetaParameters(self, dpath, credDict, inherited=True, owndata=True):
@@ -508,10 +515,15 @@ class DirectoryMetadata:
   def __expandMetaDictionary(self, metaDict, credDict):
     """ Expand the dictionary with metadata query
     """
-    result = self.getMetadataFields(credDict)
+    result = self.getMetadataFields(credDict) # this now returns a fully qualified meta names, unlike the query !
     if not result['OK']:
       return result
     metaTypeDict = result['Value']
+    print "metaTypeDict", metaTypeDict
+    suffix = Utilities.fqMetaNameSuffix(credDict)
+    # remove the suffix - wrong, creates problem with selections down the line.
+    metaTypeDict = {key.replace(suffix,''):value for key, value in metaTypeDict.iteritems()
+                     if key.endswith(suffix)}
     resultDict = {}
     extraDict = {}
     for key, value in metaDict.items():
@@ -585,14 +597,17 @@ class DirectoryMetadata:
     # Now check the meta data for the requested directory and its parents
     finalMetaDict = dict(metaDict)
     for meta in metaDict.keys():
-      result = self.__checkDirsForMetadata(meta, metaDict[meta], pathString)
+      fqmeta = Utilities.fqMetaName(meta, credDict) # expand table name
+      # use fqmeta whet it is meant to be a table name
+      result = self.__checkDirsForMetadata(fqmeta, metaDict[meta], pathString)
+      print "__checkDirsForMetadata result", result
       if not result['OK']:
         return result
       elif result['Value'] is not None:
         # Some directory in the parent hierarchy is already conforming with the
         # given metadata, no need to check it further
         del finalMetaDict[meta]
-
+    print "finalMetaDict ?",finalMetaDict
     if finalMetaDict:
       pathSelection = ''
       if pathDirID:
@@ -604,9 +619,9 @@ class DirectoryMetadata:
       first = True
       for meta, value in finalMetaDict.items():
         if value == "Missing":
-          result = self.__findSubdirMissingMeta(meta, pathSelection)
+          result = self.__findSubdirMissingMeta(fqmeta, pathSelection)
         else:
-          result = self.__findSubdirByMeta(meta, value, pathSelection)
+          result = self.__findSubdirByMeta(fqmeta, value, pathSelection)
         if not result['OK']:
           return result
         mList = result['Value']

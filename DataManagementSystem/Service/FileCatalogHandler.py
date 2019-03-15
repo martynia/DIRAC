@@ -22,6 +22,7 @@ from DIRAC.Core.DISET.RequestHandler import RequestHandler, getServiceOption
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.Client.MonitoringClient import gMonitor
 from DIRAC.DataManagementSystem.DB.FileCatalogDB import FileCatalogDB
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents import Utilities
 
 # This is a global instance of the FileCatalogDB class
 gFileCatalogDB = None
@@ -487,17 +488,28 @@ class FileCatalogHandler(RequestHandler):
   types_getMetadataFields = []
 
   def export_getMetadataFields(self):
-    """ Get all the metadata fields
+    """ Get all the metadata fields. Client gets metadata keys not fully qualified (w/o the suffix).
+        restrict output for user's own group fields.
     """
+    suffix = gFileCatalogDB.fmeta.fqMetaNameSuffix(self.getRemoteCredentials())
     resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials())
     if not resultDir['OK']:
       return resultDir
+    #newResultDir = {key.replace(suffix,'') if key.endswith(suffix)
+    #                 else key:value for key, value in resultDir['Value'].iteritems()}
+    newResultDir = {key.replace(suffix,''):value for key, value in resultDir['Value'].iteritems()
+                     if key.endswith(suffix)}
+
     resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials())
     if not resultFile['OK']:
       return resultFile
+    #newResultFile = {key.replace(suffix,'') if key.endswith(suffix)
+    #      else key:value for key, value in resultFile['Value'].iteritems()}
+    newResultFile = {key.replace(suffix,''):value for key, value in resultFile['Value'].iteritems()
+                     if key.endswith(suffix)}
 
-    return S_OK({'DirectoryMetaFields': resultDir['Value'],
-                 'FileMetaFields': resultFile['Value']})
+    return S_OK({'DirectoryMetaFields': newResultDir,
+                 'FileMetaFields': newResultFile})
 
   types_setMetadata = [StringTypes, DictType]
 
@@ -523,16 +535,34 @@ class FileCatalogHandler(RequestHandler):
   types_getDirectoryUserMetadata = [StringTypes]
 
   def export_getDirectoryUserMetadata(self, path):
-    """ Get all the metadata valid for the given directory path
+    """ Get all the metadata valid for the given directory path.
+        Client gets metadata w/o the groupr suffix.
     """
-    return gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials())
+    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials())
+    gLogger.debug("Directory metadata RPC",metaDict)
+    # code below breaks client-side checks
+    #suffix = Utilities.fqMetaNameSuffix(self.getRemoteCredentials())
+    #if metaDict['OK']:
+    #  if metaDict['Value']:
+    #    metaDict['Value'] = {key.replace(suffix,'') if key.endswith(suffix)
+    #                         else key:value for key, value in metaDict['Value'].iteritems()}
+    return metaDict
 
   types_getFileUserMetadata = [StringTypes]
 
   def export_getFileUserMetadata(self, path):
-    """ Get all the metadata valid for the given file
+    """ Get all the metadata valid for the given file and suffix. Client get metadata key w/o the suffix
     """
-    return gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials())
+    suffix = gFileCatalogDB.fmeta.fqMetaNameSuffix(self.getRemoteCredentials())
+    metaDict = gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials())
+    gLogger.debug("File metadata RPC", metaDict)
+
+    if metaDict['OK']:
+      if metaDict['Value']:
+        metaDict['Value'] = {key.replace(suffix,'') if key.endswith(suffix)
+         else key:value for key, value in metaDict['Value'].iteritems()}
+    return metaDict
+    #return gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials())
 
   types_findDirectoriesByMetadata = [DictType]
 
