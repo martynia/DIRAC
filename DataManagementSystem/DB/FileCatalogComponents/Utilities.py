@@ -26,3 +26,8 @@ def getIDSelectString( ids ):
 
   return S_OK( idString )
 
+def fqMetaName(metaName, credDict):
+    return metaName+'_'+credDict['group']
+
+def fqMetaNameSuffix(credDict):
+    return '_'+credDict['group']
