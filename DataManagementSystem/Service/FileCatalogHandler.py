@@ -541,11 +541,18 @@ class FileCatalogHandler(RequestHandler):
     metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials())
     gLogger.debug("Directory metadata RPC",metaDict)
     # code below breaks client-side checks
-    #suffix = Utilities.fqMetaNameSuffix(self.getRemoteCredentials())
-    #if metaDict['OK']:
-    #  if metaDict['Value']:
-    #    metaDict['Value'] = {key.replace(suffix,'') if key.endswith(suffix)
-    #                         else key:value for key, value in metaDict['Value'].iteritems()}
+    suffix = Utilities.fqMetaNameSuffix(self.getRemoteCredentials())
+    if metaDict['OK']:
+      if metaDict['Value']:
+        metaDict['Value'] = {key.replace(suffix,'') if key.endswith(suffix)
+                             else key:value for key, value in metaDict['Value'].iteritems()}
+      if metaDict['MetadataOwner']:
+        metaDict['MetadataOwner']= {key.replace(suffix,'') if key.endswith(suffix)
+                             else key:value for key, value in metaDict['Value'].iteritems()}
+
+      if metaDict['MetadataType']:
+        metaDict['MetadataType']= {key.replace(suffix,'') if key.endswith(suffix)
+                                    else key:value for key, value in metaDict['Value'].iteritems()}
     return metaDict
 
   types_getFileUserMetadata = [StringTypes]
