@@ -1283,8 +1283,8 @@ class Dirac(API):
     return repsResult
 
   #### User Metadata API ######################################################
-
-  def getDirectoryUserMetadata(self, path, printOutput=False):
+  @fileCatalogAPIWrapper
+  def getDirectoryUserMetadata(self, path, timeout=120):
       """
 
       :param path: path to a directory or a file
@@ -1292,23 +1292,10 @@ class Dirac(API):
       :return: user metadata
       """
       fc = FileCatalog()
-      start = time.time()
-      repsResult = fc.getDirectoryUserMetadata(path, printOutput)
-      timing = time.time() - start
-      self.log.info('Dir User Metadata Lookup Time: %.2f seconds ' % (timing))
-      self.log.verbose(repsResult)
-      if not repsResult['OK']:
-        self.log.warn('Failed to retrieve user directory metadata from the catalogue')
-        self.log.warn(repsResult['Message'])
-        return repsResult
+      return fc.getDirectoryUserMetadata(path, timeout=timeout)
 
-      if printOutput:
-          print self.pPrint.pformat(repsResult['Value'])
-
-      return repsResult
-
-
-  def getFileUserMetadata(self, filepath, printOutput=False):
+  @fileCatalogAPIWrapper
+  def getFileUserMetadata(self, filepath, timeout=120):
       """
 
       :param filepath: path to a file (not directory)
@@ -1317,27 +1304,15 @@ class Dirac(API):
       """
 
       fc = FileCatalog()
-      start = time.time()
-      repsResult = fc.getFileUserMetadata(filepath, printOutput)
-      timing = time.time() - start
-      self.log.info('File User Metadata Lookup Time: %.2f seconds ' % (timing))
-      self.log.verbose(repsResult)
-      if not repsResult['OK']:
-        self.log.warn('Failed to retrieve user file metadata from the catalogue')
-        self.log.warn(repsResult['Message'])
-        return repsResult
+      return fc.getFileUserMetadata(filepath, timeout=timeout)
 
-      if printOutput:
-        print self.pPrint.pformat(repsResult['Value'])
-
-      return repsResult
   @fileCatalogAPIWrapper
   def addMetadataField(self, fieldName, fieldType, metaType='-d', timeout=120):
     """
     Add a new metadata field of the given type. (File Catalog CLI: meta index)
-    :param fieldName:
-    :param fieldType:
-    :param metaType:
+    :param fieldName: field name
+    :param fieldType: filed type
+    :param metaType:  meta type (-f or -d)
     :param timeout:
     :return:
     """

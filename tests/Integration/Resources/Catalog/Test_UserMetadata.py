@@ -91,7 +91,7 @@ class testMetadata(TestUserMetadataTestCase):
         self.assertIn(self.dir5, result['Value'].values())
 
         # API call only
-        result = self.dirac.getFileUserMetadata(self.lfn5, printOutput=False)
+        result = self.dirac.getFileUserMetadata(self.lfn5)
         self.assertTrue(result['OK'])
         # 'Value': {'JMMetaInt6': 13L, 'JMMetaInt5': 12L, 'JMTestDirectory': 124L}
         self.assertDictContainsSubset({'JMMetaInt6': 13L}, result['Value'])
