@@ -94,8 +94,9 @@ class FileMetadata:
     """ Get all the defined metadata fields
     """
 
-    req = "SELECT MetaName,MetaType FROM FC_FileMetaFields"
-    result = self.db._query(req)
+    suffix = FileMetadata.fqMetaNameSuffix(credDict)
+    req = "SELECT MetaName,MetaType FROM FC_FileMetaFields WHERE MetaName LIKE '%%%s'" % suffix
+    result = self.db._query( req )
     if not result['OK']:
       return result
 
@@ -613,9 +614,6 @@ class FileMetadata:
       return result
     dirList = result['Value']
     dirFlag = result['Selection']
-    print "metaDict", metaDict
-    print "dirList", dirList
-    print "dirFlag", dirFlag
 
     # 2.- Get known file metadata fields
 #     fileMetaDict = {}
@@ -625,9 +623,6 @@ class FileMetadata:
     fileMetaKeys = result['Value'].keys() + FILE_STANDARD_METAKEYS.keys()
     fileMetaDict = dict( item for item in metaDict.items()
                          if item[0]+Utilities.fqMetaNameSuffix(credDict) in fileMetaKeys )
-    print "fileMetaKeys", fileMetaKeys
-    print "fileMetaDict", fileMetaDict
-
     fileList = []
     idLfnDict = {}
 

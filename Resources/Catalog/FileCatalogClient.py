@@ -292,7 +292,7 @@ class FileCatalogClient(FileCatalogClientBase):
     """
     directory = "/".join(path.split("/")[:-1])
     rpcClient = self._getRPC(timeout=timeout)
-    result = rpcClient.getFileUserMetadata(path)
+    result = rpcClient.findDirectoriesByMetadata(path)
     if not result['OK']:
       return result
     fmeta = result['Value']
