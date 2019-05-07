@@ -25,13 +25,37 @@ class DirectoryMetadata:
 #  Manage Metadata fields
 #
 
+  def getMetaName(self, meta, credDict):
+    """
+    Return a metadata name based on client supplied meta name and client credentials
+    For the base class it just returns the name passed in.
+    This method is meant to be overwritten by derived classes.
+
+    :param meta:  meta name
+    :param credDict: client credentials
+    :return: meta name
+    """
+
+    return meta
+
+  def getMetaNameSuffix(self, credDict):
+    """
+    Get meta name suffix based on client credentials. The method is needed to be able
+    to return metadata w/o a suffix to the client.
+    This method is meant to be overwritten by derived classes.
+
+    :param credDict: client credentials
+    :return: the suffix. And empty string for a base class.
+    """
+
+    return ''
   def addMetadataField(self, pname, ptype, credDict):
     """ Add a new metadata parameter to the Metadata Database.
         pname - parameter name, ptype - parameter type in the MySQL notation
         Modified to use fully qualified metadata names.
     """
     # existing pnames are fully qualified, so
-    fqPname = Utilities.fqMetaName(pname, credDict)
+    fqPname = self.getMetaName(pname, credDict)
     result = self.db.fmeta.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
@@ -81,7 +105,7 @@ class DirectoryMetadata:
     """ Remove metadata field.
         Table name is now fully qualified
     """
-    pname = Utilities.fqMetaName(r_pname, credDict)
+    pname = self.getMetaName(r_pname, credDict)
     req = "DROP TABLE FC_Meta_%s" % pname
     result = self.db._update(req)
     error = ''
@@ -194,7 +218,7 @@ class DirectoryMetadata:
       return dirmeta
 
     for metaName, metaValue in metadict.items():
-      fqMetaName = Utilities.fqMetaName(metaName, credDict)
+      fqMetaName = self.getMetaName(metaName, credDict)
       if fqMetaName not in metaFields:
         result = self.setMetaParameter(dpath, metaName, metaValue, credDict)
         if not result['OK']:
@@ -266,7 +290,7 @@ class DirectoryMetadata:
 
     result = self.db._insert('FC_DirMeta',
                              ['DirID', 'MetaKey', 'MetaValue'],
-                             [dirID, Utilities.fqMetaName(metaName, credDict), str(metaValue)])
+                             [dirID, self.getMetaName(metaName, credDict), str(metaValue)])
     return result
 
   def getDirectoryMetaParameters(self, dpath, credDict, inherited=True, owndata=True):
@@ -519,8 +543,7 @@ class DirectoryMetadata:
     if not result['OK']:
       return result
     metaTypeDict = result['Value']
-    print "metaTypeDict", metaTypeDict
-    suffix = Utilities.fqMetaNameSuffix(credDict)
+    suffix = self.getMetaNameSuffix(credDict)
     # remove the suffix - wrong, creates problem with selections down the line.
     metaTypeDict = {key.replace(suffix,''):value for key, value in metaTypeDict.iteritems()
                      if key.endswith(suffix)}
@@ -597,7 +620,7 @@ class DirectoryMetadata:
     # Now check the meta data for the requested directory and its parents
     finalMetaDict = dict(metaDict)
     for meta in metaDict.keys():
-      fqmeta = Utilities.fqMetaName(meta, credDict) # expand table name
+      fqmeta = self.getMetaName(meta, credDict) # expand table name
       # use fqmeta whet it is meant to be a table name
       result = self.__checkDirsForMetadata(fqmeta, metaDict[meta], pathString)
       print "__checkDirsForMetadata result", result
