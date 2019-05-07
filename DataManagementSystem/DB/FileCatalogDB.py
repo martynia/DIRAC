@@ -5,7 +5,9 @@ __RCSID__ = "$Id$"
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Base.DB import DB
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryMetadata import DirectoryMetadata
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MultiVODirectoryMetadata import MultiVODirectoryMetadata
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.FileMetadata import FileMetadata
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MultiVOFileMetadata import MultiVOFileMetadata
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectorySimpleTree import DirectorySimpleTree
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryNodeTree import DirectoryNodeTree
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryLevelTree import DirectoryLevelTree
