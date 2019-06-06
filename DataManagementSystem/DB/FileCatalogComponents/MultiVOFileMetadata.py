@@ -3,7 +3,8 @@
 
 __RCSID__ = "$Id$"
 
-from FileMetadata import FileMetadata
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.FileMetadata import FileMetadata
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 
 
 class MultiVOFileMetadata(FileMetadata):
@@ -14,21 +15,24 @@ class MultiVOFileMetadata(FileMetadata):
   def __init__(self, database=None):
     FileMetadata.__init__(self, database=database)
 
-  def getMetaName(self, meta, credDict):
+  def _getMetaName(self, meta, credDict):
     """
     Return a fully-qualified metadata name based on client-suplied metadata name and
     client credentials. User group is added to the metadata passed in.
+
     :param meta: metadata name
     :param credDict: client credentials
     :return: fully-qualified metadata name
     """
 
-    return meta + self.getMetaNameSuffix(credDict)
+    return meta + self._getMetaNameSuffix(credDict)
 
-  def getMetaNameSuffix(self, credDict):
+  def _getMetaNameSuffix(self, credDict):
     """
     Get a VO specific suffix from user credentials.
+
     :param credDict: user credentials
     :return: VO specific suffix
     """
-    return '_' + credDict['group']
+    vo = Registry.getGroupOption(credDict['group'], 'VO')
+    return '_' + vo

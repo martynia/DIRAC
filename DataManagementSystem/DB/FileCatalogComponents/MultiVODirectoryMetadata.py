@@ -3,7 +3,7 @@
 
 __RCSID__ = "$Id$"
 
-from DirectoryMetadata import DirectoryMetadata
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryMetadata import DirectoryMetadata
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 
 
@@ -15,7 +15,7 @@ class MultiVODirectoryMetadata(DirectoryMetadata):
   def __init__(self, database=None):
     DirectoryMetadata.__init__(self, database=database)
 
-  def getMetaName(self, meta, credDict):
+  def _getMetaName(self, meta, credDict):
     """
     Return a fully-qualified metadata name based on client-suplied metadata name and
     client credentials. User VO is added to the metadata passed in.
@@ -25,9 +25,9 @@ class MultiVODirectoryMetadata(DirectoryMetadata):
     :return: fully-qualified metadata name
     """
 
-    return meta + self.getMetaNameSuffix(credDict)
+    return meta + self._getMetaNameSuffix(credDict)
 
-  def getMetaNameSuffix(self, credDict):
+  def _getMetaNameSuffix(self, credDict):
     """
     Get a VO specific suffix from user credentials and the CS.
 

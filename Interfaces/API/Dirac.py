@@ -68,6 +68,7 @@ def parseArguments(args):
     argList += arg.split(',')
   return argList
 
+
 def fileCatalogAPIWrapper(func):
   @wraps(func)
   def wrapper(self, *args, **kwargs):
@@ -86,6 +87,7 @@ def fileCatalogAPIWrapper(func):
       print self.pPrint.pformat(repsResult['Value'])
 
     return repsResult
+
   return wrapper
 
 class Dirac(API):
@@ -1299,7 +1301,7 @@ class Dirac(API):
 
     return S_OK(repsResult)
 
-  #### User Metadata API ######################################################
+  #User Metadata API
   @fileCatalogAPIWrapper
   def getDirectoryUserMetadata(self, path, timeout=120):
       """
@@ -1327,6 +1329,7 @@ class Dirac(API):
   def addMetadataField(self, fieldName, fieldType, metaType='-d', timeout=120):
     """
     Add a new metadata field of the given type. (File Catalog CLI: meta index)
+
     :param fieldName: field name
     :param fieldType: filed type
     :param metaType:  meta type (-f or -d)
@@ -1381,7 +1384,7 @@ class Dirac(API):
 
   def findFilesByMetadata(self, metaDict, path='/', timeout=120):
 
-    fc=FileCatalog()
+    fc = FileCatalog()
     return fc.findFilesByMetadata(metaDict, path=path, timeout=timeout)
 
   def findFilesByMetadataDetailed(self, metaDict, path='/', timeout=120):
@@ -1405,12 +1408,12 @@ class Dirac(API):
   def addMetadataSet(self, setName, setDict, timeout=120):
     """ Add a new metadata set
     """
-    pass # server side broken
+    pass  # server side broken
 
   def getMetadataSet(self, setName, expandFlag, timeout=120):
     """ Add a new metadata set
     """
-    pass # server side broken
+    pass  # server side broken
 
   #############################################################################
   def addFile(self, lfn, fullPath, diracSE, fileGuid=None, printOutput=False):
