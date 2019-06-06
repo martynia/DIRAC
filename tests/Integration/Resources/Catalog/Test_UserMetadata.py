@@ -119,7 +119,7 @@ class testMetadata(TestUserMetadataTestCase):
   def test_ReplicasByMetadata(self):
     metaDict6 = {'JMMetaInt6': 13}
     result = self.dirac.getReplicasByMetadata(metaDict6, path='/')
-    self.assertTrue(result['OK'])
+    self.assertFalse(result['OK'])
 
 
 if __name__ == '__main__':
