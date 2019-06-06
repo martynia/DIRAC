@@ -100,11 +100,11 @@ class DirectoryMetadata:
 
     return S_OK("Added new metadata: %d" % metadataID)
 
-  def deleteMetadataField(self, r_pname, credDict):
+  def deleteMetadataField(self, rawPname, credDict):
     """ Remove metadata field.
         Table name is now fully qualified
     """
-    pname = self._getMetaName(r_pname, credDict)
+    pname = self._getMetaName(rawPname, credDict)
     req = "DROP TABLE FC_Meta_%s" % pname
     result = self.db._update(req)
     error = ''
