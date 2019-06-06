@@ -8,7 +8,6 @@ __RCSID__ = "$Id$"
 import os
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities.Time import queryTime
-import Utilities
 
 
 class DirectoryMetadata:
@@ -25,7 +24,7 @@ class DirectoryMetadata:
 #  Manage Metadata fields
 #
 
-  def getMetaName(self, meta, credDict):
+  def _getMetaName(self, meta, credDict):
     """
     Return a metadata name based on client supplied meta name and client credentials
     For the base class it just returns the name passed in.
@@ -38,7 +37,7 @@ class DirectoryMetadata:
 
     return meta
 
-  def getMetaNameSuffix(self, credDict):
+  def _getMetaNameSuffix(self, credDict):
     """
     Get meta name suffix based on client credentials. The method is needed to be able
     to return metadata w/o a suffix to the client.
@@ -55,11 +54,11 @@ class DirectoryMetadata:
         Modified to use fully qualified metadata names.
     """
     # existing pnames are fully qualified, so
-    fqPname = self.getMetaName(pname, credDict)
+    fqPname = self._getMetaName(pname, credDict)
     result = self.db.fmeta.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       return S_ERROR('The metadata %s is already defined for Files' % pname)
 
     result = self.getMetadataFields(credDict)
@@ -105,7 +104,7 @@ class DirectoryMetadata:
     """ Remove metadata field.
         Table name is now fully qualified
     """
-    pname = self.getMetaName(r_pname, credDict)
+    pname = self._getMetaName(r_pname, credDict)
     req = "DROP TABLE FC_Meta_%s" % pname
     result = self.db._update(req)
     error = ''
@@ -118,7 +117,7 @@ class DirectoryMetadata:
         result["Message"] = error + "; " + result["Message"]
     return result
 
-  def getMetadataFields(self, credDict):
+  def getMetadataFields(self, credDict, strip_suffix = False):
     """ Get all the defined metadata fields
     """
 
@@ -130,7 +129,11 @@ class DirectoryMetadata:
     metaDict = {}
     for row in result['Value']:
       metaDict[row[0]] = row[1]
-
+    # strip the VO suffix, if required
+    if strip_suffix:
+      suffix = self._getMetaNameSuffix(credDict)
+      metaDict = {key.replace(suffix, ''): value for key, value in metaDict.iteritems()
+                  if key.endswith(suffix)}
     return S_OK(metaDict)
 
   def addMetadataSet(self, metaSetName, metaSetDict, credDict):
@@ -218,7 +221,7 @@ class DirectoryMetadata:
       return dirmeta
 
     for metaName, metaValue in metadict.items():
-      fqMetaName = self.getMetaName(metaName, credDict)
+      fqMetaName = self._getMetaName(metaName, credDict)
       if fqMetaName not in metaFields:
         result = self.setMetaParameter(dpath, metaName, metaValue, credDict)
         if not result['OK']:
@@ -279,7 +282,6 @@ class DirectoryMetadata:
   def setMetaParameter(self, dpath, metaName, metaValue, credDict):
     """ Set an meta parameter - metadata which is not used in the the data
         search operations.
-        Modified by JM: make metaName Dirac group aware.
     """
     result = self.db.dtree.findDir(dpath)
     if not result['OK']:
@@ -290,7 +292,7 @@ class DirectoryMetadata:
 
     result = self.db._insert('FC_DirMeta',
                              ['DirID', 'MetaKey', 'MetaValue'],
-                             [dirID, self.getMetaName(metaName, credDict), str(metaValue)])
+                             [dirID, self._getMetaName(metaName, credDict), str(metaValue)])
     return result
 
   def getDirectoryMetaParameters(self, dpath, credDict, inherited=True, owndata=True):
@@ -333,7 +335,7 @@ class DirectoryMetadata:
 
     return S_OK(metaDict)
 
-  def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True):
+  def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True, strip_suffix=False):
     """ Get metadata for the given directory aggregating metadata for the directory itself
         and for all the parent directories if inherited flag is True. Get also the non-indexed
         metadata parameters.
@@ -380,6 +382,17 @@ class DirectoryMetadata:
       metaDict.update(result['Value'])
       for meta in result['Value']:
         metaOwnerDict[meta] = 'OwnParameter'
+
+    if strip_suffix:
+      suffix = self._getMetaNameSuffix(credDict)
+      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
+                  else key: value for key, value in metaDict.iteritems()}
+
+      metaOwnerDict = {key.replace(suffix, '') if key.endswith(suffix)
+                       else key: value for key, value in metaOwnerDict.iteritems()}
+
+      metaTypeDict = {key.replace(suffix, '') if key.endswith(suffix)
+                      else key: value for key, value in metaTypeDict.iteritems()}
 
     result = S_OK(metaDict)
     result['MetadataOwner'] = metaOwnerDict
@@ -539,14 +552,14 @@ class DirectoryMetadata:
   def __expandMetaDictionary(self, metaDict, credDict):
     """ Expand the dictionary with metadata query
     """
-    result = self.getMetadataFields(credDict) # this now returns a fully qualified meta names, unlike the query !
+    result = self.getMetadataFields(credDict)
     if not result['OK']:
       return result
     metaTypeDict = result['Value']
-    suffix = self.getMetaNameSuffix(credDict)
+    suffix = self._getMetaNameSuffix(credDict)
     # remove the suffix - wrong, creates problem with selections down the line.
-    metaTypeDict = {key.replace(suffix,''):value for key, value in metaTypeDict.iteritems()
-                     if key.endswith(suffix)}
+    metaTypeDict = {key.replace(suffix, ''): value for key, value in metaTypeDict.iteritems()
+                    if key.endswith(suffix)}
     resultDict = {}
     extraDict = {}
     for key, value in metaDict.items():
@@ -620,17 +633,14 @@ class DirectoryMetadata:
     # Now check the meta data for the requested directory and its parents
     finalMetaDict = dict(metaDict)
     for meta in metaDict.keys():
-      fqmeta = self.getMetaName(meta, credDict) # expand table name
-      # use fqmeta whet it is meant to be a table name
+      fqmeta = self._getMetaName(meta, credDict)
       result = self.__checkDirsForMetadata(fqmeta, metaDict[meta], pathString)
-      print "__checkDirsForMetadata result", result
       if not result['OK']:
         return result
       elif result['Value'] is not None:
         # Some directory in the parent hierarchy is already conforming with the
         # given metadata, no need to check it further
         del finalMetaDict[meta]
-    print "finalMetaDict ?",finalMetaDict
     if finalMetaDict:
       pathSelection = ''
       if pathDirID:
