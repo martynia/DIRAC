@@ -133,7 +133,7 @@ class FileMetadata:
 
     for metaName, metaValue in metadict.items():
       fqMetaName = self._getMetaName(metaName, credDict)
-      if not fqMetaName in metaFields:
+      if fqMetaName not in metaFields:
         result = self.__setFileMetaParameter(fileID, metaName, metaValue, credDict)
       else:
         result = self.db.insertFields( 'FC_FileMeta_%s' % fqMetaName, ['FileID', 'Value'], [fileID, metaValue] )
