@@ -13,8 +13,8 @@ from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities.Time import queryTime
 from DIRAC.Core.Utilities.List import intListToString
 from DIRAC.DataManagementSystem.Client.MetaQuery import FILE_STANDARD_METAKEYS, \
-  FILES_TABLE_METAKEYS, \
-  FILEINFO_TABLE_METAKEYS
+    FILES_TABLE_METAKEYS, \
+    FILEINFO_TABLE_METAKEYS
 
 
 class FileMetadata:
@@ -138,7 +138,7 @@ class FileMetadata:
 
     for metaName, metaValue in metadict.items():
       fqMetaName = self._getMetaName(metaName, credDict)
-      if not fqMetaName in metaFields:
+      if fqMetaName not in metaFields:
         result = self.__setFileMetaParameter(fileID, metaName, metaValue, credDict)
       else:
         result = self.db._insert('FC_FileMeta_%s' % fqMetaName, ['FileID', 'Value'], [fileID, metaValue])
@@ -328,7 +328,7 @@ class FileMetadata:
       return S_OK({})
     metaDict = {}
     for fileID, key, value in result['Value']:
-      if metaDict.has_key(key):
+      if key in metaDict:
         if isinstance(metaDict[key], ListType):
           metaDict[key].append(value)
         else:
