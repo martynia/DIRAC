@@ -48,6 +48,7 @@ class DirectoryMetadata:
     """
 
     return ''
+
   def addMetadataField(self, pname, ptype, credDict):
     """ Add a new metadata parameter to the Metadata Database.
         pname - parameter name, ptype - parameter type in the MySQL notation
@@ -117,7 +118,7 @@ class DirectoryMetadata:
         result["Message"] = error + "; " + result["Message"]
     return result
 
-  def getMetadataFields(self, credDict, strip_suffix = False):
+  def getMetadataFields(self, credDict, strip_suffix=False):
     """ Get all the defined metadata fields
     """
 
