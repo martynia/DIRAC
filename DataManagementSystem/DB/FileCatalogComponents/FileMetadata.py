@@ -20,11 +20,11 @@ class FileMetadata:
   def setDatabase(self, database):
     self.db = database
 
-##############################################################################
-#
-#  Manage Metadata fields
-#
-##############################################################################
+  ##############################################################################
+  #
+  #  Manage Metadata fields
+  #
+  ##############################################################################
   def addMetadataField(self, pname, ptype, credDict):
     """ Add a new metadata parameter to the Metadata Database.
         pname - parameter name, ptype - parameter type in the MySQL notation.
@@ -50,29 +50,28 @@ class FileMetadata:
         return S_OK('Already exists')
       else:
         return S_ERROR('Attempt to add an existing metadata with different type: %s/%s' %
-                        (ptype, result['Value'][fqPname]))
-
+                       (ptype, result['Value'][fqPname]))
     valueType = ptype
     if ptype == "MetaSet":
       valueType = "VARCHAR(64)"
     req = "CREATE TABLE FC_FileMeta_%s ( FileID INTEGER NOT NULL, Value %s, PRIMARY KEY (FileID), INDEX (Value) )" \
-        % (fqPname, valueType)
-    result = self.db._query( req )
+          % (fqPname, valueType)
+    result = self.db._query(req)
     if not result['OK']:
       return result
 
-    result = self.db.insertFields('FC_FileMetaFields', ['MetaName', 'MetaType'], [fqPname, ptype] )
+    result = self.db.insertFields('FC_FileMetaFields', ['MetaName', 'MetaType'], [fqPname, ptype])
     if not result['OK']:
       return result
 
     metadataID = result['lastRowId']
-    result = self.__transformMetaParameterToData( fqPname )
+    result = self.__transformMetaParameterToData(fqPname)
     if not result['OK']:
       return result
 
     return S_OK("Added new metadata: %d" % metadataID)
 
-  def deleteMetadataField( self, pname, credDict ):
+  def deleteMetadataField(self, pname, credDict):
     """ Remove metadata field (only from user's own group)
     """
 
@@ -109,11 +108,11 @@ class FileMetadata:
                   if key.endswith(suffix)}
     return S_OK(metaDict)
 
-###########################################################
-#
-# Set and get metadata for files
-#
-###########################################################
+  ###########################################################
+  #
+  # Set and get metadata for files
+  #
+  ###########################################################
 
   def setMetadata(self, path, metadict, credDict):
     """ Set the value of a given metadata field for the the given directory path.
@@ -135,13 +134,13 @@ class FileMetadata:
     for metaName, metaValue in metadict.items():
       fqMetaName = self._getMetaName(metaName, credDict)
       if not fqMetaName in metaFields:
-        result = self.__setFileMetaParameter( fileID, metaName, metaValue, credDict )
+        result = self.__setFileMetaParameter(fileID, metaName, metaValue, credDict)
       else:
         result = self.db.insertFields( 'FC_FileMeta_%s' % fqMetaName, ['FileID', 'Value'], [fileID, metaValue] )
         if not result['OK']:
-          if result['Message'].find( 'Duplicate' ) != -1:
-            req = "UPDATE FC_FileMeta_%s SET Value='%s' WHERE FileID=%d" % ( fqMetaName, metaValue, fileID )
-            result = self.db._update( req )
+          if result['Message'].find('Duplicate') != -1:
+            req = "UPDATE FC_FileMeta_%s SET Value='%s' WHERE FileID=%d" % (fqMetaName, metaValue, fileID)
+            result = self.db._update(req)
             if not result['OK']:
               return result
           else:
@@ -149,13 +148,13 @@ class FileMetadata:
 
     return S_OK()
 
-  def removeMetadata( self, path, rawMetadata, credDict ):
+  def removeMetadata(self, path, rawMetadata, credDict):
     """ Remove the specified metadata for the given file (for user's own group only)
     """
     # get fully qualified metadata name
     metadata = self._getMetaName(rawMetadata, credDict)
     # this would be fully qualified already
-    result = self.getFileMetadataFields( credDict )
+    result = self.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
     metaFields = result['Value']
@@ -206,9 +205,9 @@ class FileMetadata:
         search operations.
         Modified by JM: make metaName Dirac group aware.
     """
-    result = self.db.insertFields( 'FC_FileMeta',
-                          ['FileID', 'MetaKey', 'MetaValue'],
-                          [fileID, self._getMetaName(metaName, credDict), str( metaValue )] )
+    result = self.db.insertFields('FC_FileMeta',
+                                  ['FileID', 'MetaKey', 'MetaValue'],
+                                  [fileID, self._getMetaName(metaName, credDict), str(metaValue)])
     return result
 
   def _getMetaName(self, meta, credDict):
@@ -236,7 +235,7 @@ class FileMetadata:
 
     return ''
 
-  def setFileMetaParameter( self, path, metaName, metaValue, credDict ):
+  def setFileMetaParameter(self, path, metaName, metaValue, credDict):
 
     result = self.__getFileID(path)
     if not result['OK']:
@@ -370,11 +369,11 @@ class FileMetadata:
     result = self.db._update(req)
     return result
 
-#########################################################################
-#
-#  Finding files by metadata
-#
-#########################################################################
+  #########################################################################
+  #
+  #  Finding files by metadata
+  #
+  #########################################################################
 
   def __createMetaSelection(self, value):
     ''' Create selection string to be used in the SQL query
@@ -612,7 +611,7 @@ class FileMetadata:
     if not result['Value']:
       return S_OK([])
 
-#     fileList = [ row[0] for row in result['Value' ] ]
+    #     fileList = [ row[0] for row in result['Value' ] ]
     fileList = []
     for row in result['Value']:
       fileID = row[0]
@@ -641,7 +640,7 @@ class FileMetadata:
     dirFlag = result['Selection']
 
     # 2.- Get known file metadata fields
-#     fileMetaDict = {}
+    #     fileMetaDict = {}
     result = self.getFileMetadataFields(credDict)  # this returns fully qualified meta name
     if not result['OK']:
       return result
@@ -681,3 +680,4 @@ class FileMetadata:
       idLfnDict = result['Value']['Successful']
 
     return S_OK(idLfnDict)
+
