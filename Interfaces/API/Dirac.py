@@ -90,6 +90,7 @@ def fileCatalogAPIWrapper(func):
 
   return wrapper
 
+
 class Dirac(API):
   """
    DIRAC API Class
@@ -1301,29 +1302,29 @@ class Dirac(API):
 
     return S_OK(repsResult)
 
-  #User Metadata API
+  # User Metadata API
   @fileCatalogAPIWrapper
   def getDirectoryUserMetadata(self, path, timeout=120):
-      """
+    """
 
-      :param path: path to a directory or a file
-      :param printOutput: Optional flag to print result
-      :return: user metadata
-      """
-      fc = FileCatalog()
-      return fc.getDirectoryUserMetadata(path, timeout=timeout)
+    :param path: path to a directory or a file
+    :param printOutput: Optional flag to print result
+    :return: user metadata
+    """
+    fc = FileCatalog()
+    return fc.getDirectoryUserMetadata(path, timeout=timeout)
 
   @fileCatalogAPIWrapper
   def getFileUserMetadata(self, filepath, timeout=120):
-      """
+    """
 
-      :param filepath: path to a file (not directory)
-      :param printOutput: Optional flag to print result
-      :return: user file metadata
-      """
+    :param filepath: path to a file (not directory)
+    :param printOutput: Optional flag to print result
+    :return: user file metadata
+    """
 
-      fc = FileCatalog()
-      return fc.getFileUserMetadata(filepath, timeout=timeout)
+    fc = FileCatalog()
+    return fc.getFileUserMetadata(filepath, timeout=timeout)
 
   @fileCatalogAPIWrapper
   def addMetadataField(self, fieldName, fieldType, metaType='-d', timeout=120):

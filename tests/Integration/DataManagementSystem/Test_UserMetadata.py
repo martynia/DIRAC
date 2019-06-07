@@ -94,15 +94,15 @@ class testMetadata(TestUserMetadataTestCase):
     result = self.dirac.getFileUserMetadata(self.lfn5)
     self.assertTrue(result['OK'])
     # 'Value': {'JMMetaInt6': 13L, 'JMMetaInt5': 12L, 'JMTestDirectory': 124L}
-    self.assertDictContainsSubset({'JMMetaInt6': 13L}, result['Value'])
+    self.assertDictContainsSubset({'JMMetaInt6': 13}, result['Value'])
     # file: return  enclosing directory
     result = self.dirac.getDirectoryUserMetadata(self.lfn5)
     self.assertTrue(result['OK'])
-    self.assertDictContainsSubset({'JMTestDirectory6': 126L}, result['Value'])
+    self.assertDictContainsSubset({'JMTestDirectory6': 126}, result['Value'])
     # directory only
     result = self.dirac.getDirectoryUserMetadata(self.dir5)
     self.assertTrue(result['OK'])
-    self.assertDictContainsSubset({'JMTestDirectory6': 126L}, result['Value'])
+    self.assertDictContainsSubset({'JMTestDirectory6': 126}, result['Value'])
     # replicas
     # metaDict6={'JMMetaInt6':13}
     # result = self.dirac.getReplicasByMetadata(metaDict, path='/')
