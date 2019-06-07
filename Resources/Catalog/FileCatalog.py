@@ -293,7 +293,6 @@ class FileCatalog( object ):
     else:
       # FIXME: Return just master result here. This is temporary as more detailed
       # per catalog result needs multiple fixes in various client calls
-      # JM non-lfn methods would return {} if not a master...
       return masterResult
 
 

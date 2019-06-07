@@ -491,25 +491,16 @@ class FileCatalogHandler(RequestHandler):
     """ Get all the metadata fields. Client gets metadata keys not fully qualified (w/o the suffix).
         restrict output for user's own group fields.
     """
-    suffix = gFileCatalogDB.fmeta.fqMetaNameSuffix(self.getRemoteCredentials())
-    resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials())
+    resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials(), strip_suffix=True)
     if not resultDir['OK']:
       return resultDir
-    #newResultDir = {key.replace(suffix,'') if key.endswith(suffix)
-    #                 else key:value for key, value in resultDir['Value'].iteritems()}
-    newResultDir = {key.replace(suffix,''):value for key, value in resultDir['Value'].iteritems()
-                     if key.endswith(suffix)}
 
-    resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials())
+    resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials(), strip_suffix=True)
     if not resultFile['OK']:
       return resultFile
-    #newResultFile = {key.replace(suffix,'') if key.endswith(suffix)
-    #      else key:value for key, value in resultFile['Value'].iteritems()}
-    newResultFile = {key.replace(suffix,''):value for key, value in resultFile['Value'].iteritems()
-                     if key.endswith(suffix)}
 
-    return S_OK({'DirectoryMetaFields': newResultDir,
-                 'FileMetaFields': newResultFile})
+    return S_OK({'DirectoryMetaFields': resultDir['Value'],
+                 'FileMetaFields': resultFile['Value']})
 
   types_setMetadata = [StringTypes, DictType]
 
@@ -536,40 +527,23 @@ class FileCatalogHandler(RequestHandler):
 
   def export_getDirectoryUserMetadata(self, path):
     """ Get all the metadata valid for the given directory path.
-        Client gets metadata w/o the groupr suffix.
+        Client gets metadata w/o the group suffix.
     """
-    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials())
-    gLogger.debug("Directory metadata RPC",metaDict)
+    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
+    gLogger.debug("Directory metadata RPC", metaDict)
     # code below breaks client-side checks
-    suffix = Utilities.fqMetaNameSuffix(self.getRemoteCredentials())
-    if metaDict['OK']:
-      if metaDict['Value']:
-        metaDict['Value'] = {key.replace(suffix,'') if key.endswith(suffix)
-                             else key:value for key, value in metaDict['Value'].iteritems()}
-      if metaDict['MetadataOwner']:
-        metaDict['MetadataOwner']= {key.replace(suffix,'') if key.endswith(suffix)
-                             else key:value for key, value in metaDict['Value'].iteritems()}
 
-      if metaDict['MetadataType']:
-        metaDict['MetadataType']= {key.replace(suffix,'') if key.endswith(suffix)
-                                    else key:value for key, value in metaDict['Value'].iteritems()}
     return metaDict
 
   types_getFileUserMetadata = [StringTypes]
 
   def export_getFileUserMetadata(self, path):
-    """ Get all the metadata valid for the given file and suffix. Client get metadata key w/o the suffix
+    """ Get all the metadata valid for the given file and suffix. Client gets metadata key w/o the suffix
     """
-    suffix = gFileCatalogDB.fmeta.fqMetaNameSuffix(self.getRemoteCredentials())
-    metaDict = gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials())
+    metaDict = gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
     gLogger.debug("File metadata RPC", metaDict)
 
-    if metaDict['OK']:
-      if metaDict['Value']:
-        metaDict['Value'] = {key.replace(suffix,'') if key.endswith(suffix)
-         else key:value for key, value in metaDict['Value'].iteritems()}
     return metaDict
-    #return gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials())
 
   types_findDirectoriesByMetadata = [DictType]
 
