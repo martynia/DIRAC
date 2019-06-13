@@ -386,13 +386,15 @@ class DirectoryMetadata:
 
     if strip_suffix:
       suffix = self._getMetaNameSuffix(credDict)
-      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
+#      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
+#                  else key: value for key, value in metaDict.iteritems()}
+      metaDict = {key.rsplit(suffix, 1) if key.endswith(suffix)
                   else key: value for key, value in metaDict.iteritems()}
 
-      metaOwnerDict = {key.replace(suffix, '') if key.endswith(suffix)
+      metaOwnerDict = {key.rsplit(suffix, 1) if key.endswith(suffix)
                        else key: value for key, value in metaOwnerDict.iteritems()}
 
-      metaTypeDict = {key.replace(suffix, '') if key.endswith(suffix)
+      metaTypeDict = {key.rsplit(suffix, 1) if key.endswith(suffix)
                       else key: value for key, value in metaTypeDict.iteritems()}
 
     result = S_OK(metaDict)
