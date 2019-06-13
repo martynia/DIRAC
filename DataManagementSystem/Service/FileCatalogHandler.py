@@ -489,7 +489,7 @@ class FileCatalogHandler(RequestHandler):
 
   def export_getMetadataFields(self):
     """ Get all the metadata fields. Client gets metadata keys not fully qualified (w/o the suffix).
-        restrict output for user's own group fields.
+        restrict output for user's own VO fields.
     """
     resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials(), strip_suffix=True)
     if not resultDir['OK']:
@@ -527,10 +527,11 @@ class FileCatalogHandler(RequestHandler):
 
   def export_getDirectoryUserMetadata(self, path):
     """ Get all the metadata valid for the given directory path.
-        Client gets metadata w/o the group suffix.
+        Client gets metadata w/o the VO suffix.
     """
-    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
+    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=False)
     gLogger.debug("Directory metadata RPC", metaDict)
+    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
     # code below breaks client-side checks
 
     return metaDict
