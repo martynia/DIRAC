@@ -530,8 +530,9 @@ class FileCatalogHandler(RequestHandler):
         Client gets metadata w/o the VO suffix.
     """
     metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=False)
-    gLogger.debug("Directory metadata RPC", metaDict)
+    gLogger.debug("Directory metadata RPC (before stripping)", metaDict)
     metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
+    gLogger.debug("Directory metadata RPC (after stripping)", metaDict)
     # code below breaks client-side checks
 
     return metaDict
