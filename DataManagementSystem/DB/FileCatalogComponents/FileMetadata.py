@@ -78,7 +78,7 @@ class FileMetadata:
     return S_OK("Added new metadata: %d" % metadataID)
 
   def deleteMetadataField(self, pname, credDict):
-    """ Remove metadata field (only from user's own group)
+    """ Remove metadata field (only from user's own VO)
     """
 
     fqPname = self._getMetaName(pname, credDict)
@@ -154,7 +154,7 @@ class FileMetadata:
     return S_OK()
 
   def removeMetadata(self, path, rawMetadata, credDict):
-    """ Remove the specified metadata for the given file (for user's own group only)
+    """ Remove the specified metadata for the given file (for user's own VO only)
     """
     # get fully qualified metadata name
     metadata = self._getMetaName(rawMetadata, credDict)
@@ -207,8 +207,7 @@ class FileMetadata:
 
   def __setFileMetaParameter(self, fileID, metaName, metaValue, credDict):
     """ Set an meta parameter - metadata which is not used in the the data
-        search operations.
-        Modified by JM: make metaName Dirac group aware.
+        search operations. metaName is VO aware.
     """
     result = self.db._insert('FC_FileMeta',
                              ['FileID', 'MetaKey', 'MetaValue'],
@@ -645,7 +644,7 @@ class FileMetadata:
       return result
     fileMetaKeys = result['Value'].keys() + FILE_STANDARD_METAKEYS.keys()
     fileMetaDict = dict(item for item in metaDict.items()
-                        if item[0] + self._getMetaNameSuffix(credDict) in fileMetaKeys)
+                        if self._getMetaName(item[0], credDict) in fileMetaKeys)
     fileList = []
     lfnIdDict = {}
     lfnList = []
