@@ -109,7 +109,7 @@ class FileMetadata:
       metaDict[row[0]] = row[1]
     # strip the suffix, if required (for clients)
     if strip_suffix:
-      metaDict = {key.replace(suffix, ''): value for key, value in metaDict.iteritems()
+      metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
                   if key.endswith(suffix)}
     return S_OK(metaDict)
 
@@ -311,7 +311,7 @@ class FileMetadata:
 
     if strip_suffix:
       suffix = self._getMetaNameSuffix(credDict)
-      metaDict = {key.replace(suffix, ''): value for key, value in metaDict.iteritems()
+      metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
                   if key.endswith(suffix)}
 
     result = S_OK(metaDict)
