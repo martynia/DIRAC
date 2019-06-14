@@ -133,7 +133,7 @@ class DirectoryMetadata:
     # strip the VO suffix, if required
     if strip_suffix:
       suffix = self._getMetaNameSuffix(credDict)
-      metaDict = {key.replace(suffix, ''): value for key, value in metaDict.iteritems()
+      metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
                   if key.endswith(suffix)}
     return S_OK(metaDict)
 
@@ -560,8 +560,8 @@ class DirectoryMetadata:
       return result
     metaTypeDict = result['Value']
     suffix = self._getMetaNameSuffix(credDict)
-    # remove the suffix - wrong, creates problem with selections down the line.
-    metaTypeDict = {key.replace(suffix, ''): value for key, value in metaTypeDict.iteritems()
+    # remove the suffix.
+    metaTypeDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaTypeDict.iteritems()
                     if key.endswith(suffix)}
     resultDict = {}
     extraDict = {}
