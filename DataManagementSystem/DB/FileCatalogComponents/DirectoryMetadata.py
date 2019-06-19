@@ -8,13 +8,15 @@ __RCSID__ = "$Id$"
 import os
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Utilities.Time import queryTime
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MetaNameMixIn import MetaNameMixIn
 
 
-class DirectoryMetadata:
+class DirectoryMetadata(MetaNameMixIn):
 
   def __init__(self, database=None):
 
     self.db = database
+    MetaNameMixIn.__init__(self)
 
   def setDatabase(self, database):
     self.db = database
@@ -24,30 +26,30 @@ class DirectoryMetadata:
 #  Manage Metadata fields
 #
 
-  def _getMetaName(self, meta, credDict):
-    """
-    Return a metadata name based on client supplied meta name and client credentials
-    For the base class it just returns the name passed in.
-    This method is meant to be overwritten by derived classes.
-
-    :param meta:  meta name
-    :param credDict: client credentials
-    :return: meta name
-    """
-
-    return meta
-
-  def _getMetaNameSuffix(self, credDict):
-    """
-    Get meta name suffix based on client credentials. The method is needed to be able
-    to return metadata w/o a suffix to the client.
-    This method is meant to be overwritten by derived classes.
-
-    :param credDict: client credentials
-    :return: the suffix. And empty string for a base class.
-    """
-
-    return ''
+  # def _getMetaName(self, meta, credDict):
+  #   """
+  #   Return a metadata name based on client supplied meta name and client credentials
+  #   For the base class it just returns the name passed in.
+  #   This method is meant to be overwritten by derived classes.
+  #
+  #   :param meta:  meta name
+  #   :param credDict: client credentials
+  #   :return: meta name
+  #   """
+  #
+  #   return meta
+  #
+  # def _getMetaNameSuffix(self, credDict):
+  #   """
+  #   Get meta name suffix based on client credentials. The method is needed to be able
+  #   to return metadata w/o a suffix to the client.
+  #   This method is meant to be overwritten by derived classes.
+  #
+  #   :param credDict: client credentials
+  #   :return: the suffix. And empty string for a base class.
+  #   """
+  #
+  #   return ''
 
   def addMetadataField(self, pname, ptype, credDict):
     """ Add a new metadata parameter to the Metadata Database.
@@ -55,7 +57,7 @@ class DirectoryMetadata:
         Modified to use fully qualified metadata names.
     """
     # existing pnames are fully qualified, so
-    fqPname = self._getMetaName(pname, credDict)
+    fqPname = self.getMetaName(pname, credDict)
     result = self.db.fmeta.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
@@ -105,7 +107,7 @@ class DirectoryMetadata:
     """ Remove metadata field.
         Table name is now fully qualified
     """
-    pname = self._getMetaName(rawPname, credDict)
+    pname = self.getMetaName(rawPname, credDict)
     req = "DROP TABLE FC_Meta_%s" % pname
     result = self.db._update(req)
     error = ''
@@ -132,7 +134,7 @@ class DirectoryMetadata:
       metaDict[row[0]] = row[1]
     # strip the VO suffix, if required
     if strip_suffix:
-      suffix = self._getMetaNameSuffix(credDict)
+      suffix = self.getMetaNameSuffix(credDict)
       metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
                   if key.endswith(suffix)}
     return S_OK(metaDict)
@@ -222,7 +224,7 @@ class DirectoryMetadata:
       return dirmeta
 
     for metaName, metaValue in metadict.items():
-      fqMetaName = self._getMetaName(metaName, credDict)
+      fqMetaName = self.getMetaName(metaName, credDict)
       if fqMetaName not in metaFields:
         result = self.setMetaParameter(dpath, metaName, metaValue, credDict)
         if not result['OK']:
@@ -293,7 +295,7 @@ class DirectoryMetadata:
 
     result = self.db._insert('FC_DirMeta',
                              ['DirID', 'MetaKey', 'MetaValue'],
-                             [dirID, self._getMetaName(metaName, credDict), str(metaValue)])
+                             [dirID, self.getMetaName(metaName, credDict), str(metaValue)])
     return result
 
   def getDirectoryMetaParameters(self, dpath, credDict, inherited=True, owndata=True):
@@ -385,7 +387,7 @@ class DirectoryMetadata:
         metaOwnerDict[meta] = 'OwnParameter'
 
     if strip_suffix:
-      suffix = self._getMetaNameSuffix(credDict)
+      suffix = self.getMetaNameSuffix(credDict)
 #      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
 #                  else key: value for key, value in metaDict.iteritems()}
       metaDict = {key.rsplit(suffix, 1)[0] if key.endswith(suffix)
@@ -559,7 +561,7 @@ class DirectoryMetadata:
     if not result['OK']:
       return result
     metaTypeDict = result['Value']
-    suffix = self._getMetaNameSuffix(credDict)
+    suffix = self.getMetaNameSuffix(credDict)
     # remove the suffix.
     metaTypeDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaTypeDict.iteritems()
                     if key.endswith(suffix)}
@@ -636,7 +638,7 @@ class DirectoryMetadata:
     # Now check the meta data for the requested directory and its parents
     finalMetaDict = dict(metaDict)
     for meta in metaDict.keys():
-      fqmeta = self._getMetaName(meta, credDict)
+      fqmeta = self.getMetaName(meta, credDict)
       result = self.__checkDirsForMetadata(fqmeta, metaDict[meta], pathString)
       if not result['OK']:
         return result
