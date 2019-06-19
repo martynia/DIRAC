@@ -25,7 +25,7 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
     :return: fully-qualified metadata name
     """
 
-    return meta + self._getMetaNameSuffix(credDict)
+    return meta + self.getMetaNameSuffix(credDict)
 
   def getMetaNameSuffix(self, credDict):
     """
