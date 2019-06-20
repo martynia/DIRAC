@@ -26,31 +26,6 @@ class DirectoryMetadata(MetaNameMixIn):
 #  Manage Metadata fields
 #
 
-  # def _getMetaName(self, meta, credDict):
-  #   """
-  #   Return a metadata name based on client supplied meta name and client credentials
-  #   For the base class it just returns the name passed in.
-  #   This method is meant to be overwritten by derived classes.
-  #
-  #   :param meta:  meta name
-  #   :param credDict: client credentials
-  #   :return: meta name
-  #   """
-  #
-  #   return meta
-  #
-  # def _getMetaNameSuffix(self, credDict):
-  #   """
-  #   Get meta name suffix based on client credentials. The method is needed to be able
-  #   to return metadata w/o a suffix to the client.
-  #   This method is meant to be overwritten by derived classes.
-  #
-  #   :param credDict: client credentials
-  #   :return: the suffix. And empty string for a base class.
-  #   """
-  #
-  #   return ''
-
   def addMetadataField(self, pname, ptype, credDict):
     """ Add a new metadata parameter to the Metadata Database.
         pname - parameter name, ptype - parameter type in the MySQL notation
@@ -134,9 +109,8 @@ class DirectoryMetadata(MetaNameMixIn):
       metaDict[row[0]] = row[1]
     # strip the VO suffix, if required
     if strip_suffix:
-      suffix = self.getMetaNameSuffix(credDict)
-      metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
-                  if key.endswith(suffix)}
+      metaDict = self.stripSuffix(metaDict, credDict)
+
     return S_OK(metaDict)
 
   def addMetadataSet(self, metaSetName, metaSetDict, credDict):
@@ -387,17 +361,11 @@ class DirectoryMetadata(MetaNameMixIn):
         metaOwnerDict[meta] = 'OwnParameter'
 
     if strip_suffix:
-      suffix = self.getMetaNameSuffix(credDict)
 #      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
 #                  else key: value for key, value in metaDict.iteritems()}
-      metaDict = {key.rsplit(suffix, 1)[0] if key.endswith(suffix)
-                  else key: value for key, value in metaDict.iteritems()}
-
-      metaOwnerDict = {key.rsplit(suffix, 1)[0] if key.endswith(suffix)
-                       else key: value for key, value in metaOwnerDict.iteritems()}
-
-      metaTypeDict = {key.rsplit(suffix, 1)[0] if key.endswith(suffix)
-                      else key: value for key, value in metaTypeDict.iteritems()}
+      metaDict = self.stripSuffix(metaDict, credDict)
+      metaOwnerDict = self.stripSuffix(metaOwnerDict, credDict)
+      metaTypeDict = self.stripSuffix(metaTypeDict, credDict)
 
     result = S_OK(metaDict)
     result['MetadataOwner'] = metaOwnerDict
@@ -561,10 +529,9 @@ class DirectoryMetadata(MetaNameMixIn):
     if not result['OK']:
       return result
     metaTypeDict = result['Value']
-    suffix = self.getMetaNameSuffix(credDict)
-    # remove the suffix.
-    metaTypeDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaTypeDict.iteritems()
-                    if key.endswith(suffix)}
+    # strip the suffix
+    metaTypeDict = self.stripSuffix(metaTypeDict, credDict)
+
     resultDict = {}
     extraDict = {}
     for key, value in metaDict.items():

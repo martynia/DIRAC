@@ -37,3 +37,15 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
     vo = Registry.getGroupOption(credDict['group'], 'VO')
     return '_' + vo.replace('-','_')
 
+  def stripSuffix(self, metaDict, credDict):
+    """
+    Strip the suffix from all keys which contain it, leaving other keys intact.
+    :param metaDict: original dict
+    :param credDict: user credential dictionary
+    :return: a new dict with modified keys
+    """
+
+    suffix = self.getMetaNameSuffix(credDict)
+    smetaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
+              if key.endswith(suffix)}
+    return smetaDict

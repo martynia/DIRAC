@@ -100,7 +100,6 @@ class FileMetadata(MetaNameMixIn):
     """ Get all the defined metadata fields
     """
 
-    suffix = self.getMetaNameSuffix(credDict)
     req = "SELECT MetaName,MetaType FROM FC_FileMetaFields WHERE MetaName LIKE '%%%s'" % suffix
     result = self.db._query(req)
     if not result['OK']:
@@ -111,8 +110,7 @@ class FileMetadata(MetaNameMixIn):
       metaDict[row[0]] = row[1]
     # strip the suffix, if required (for clients)
     if strip_suffix:
-      metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
-                  if key.endswith(suffix)}
+      metaDict = self.stripSuffix(metaDict, credDict)
     return S_OK(metaDict)
 
   ###########################################################
@@ -216,31 +214,6 @@ class FileMetadata(MetaNameMixIn):
                              [fileID, self.getMetaName(metaName, credDict), str(metaValue)])
     return result
 
-  # def _getMetaName(self, meta, credDict):
-  #   """
-  #   Return a metadata name based on client supplied meta name and client credentials
-  #   For the base class it just returns the name passed in.
-  #   This method is a 'hook' and is meant to be overwritten by derived classes.
-  #
-  #   :param meta:  meta name
-  #   :param credDict: client credentials
-  #   :return: meta name
-  #   """
-  #
-  #   return meta
-  #
-  # def _getMetaNameSuffix(self, credDict):
-  #   """
-  #   Get meta name suffix based on client credentials. The method is needed to be able
-  #   to return metadata w/o a suffix to the client.
-  #   This method is a 'hook' and is  meant to be overwritten by derived classes.
-  #
-  #   :param credDict: client credentials
-  #   :return: the suffix. And empty string for a base class.
-  #   """
-  #
-  #   return ''
-  #
   def setFileMetaParameter(self, path, metaName, metaValue, credDict):
 
     result = self.__getFileID(path)
@@ -311,9 +284,7 @@ class FileMetadata(MetaNameMixIn):
         metaTypeDict[meta] = 'NonSearchable'
 
     if strip_suffix:
-      suffix = self.getMetaNameSuffix(credDict)
-      metaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
-                  if key.endswith(suffix)}
+      metaDict = self.stripSuffix(metaDict, credDict)
 
     result = S_OK(metaDict)
     result['MetadataType'] = metaTypeDict
