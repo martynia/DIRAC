@@ -100,7 +100,7 @@ class FileMetadata(MetaNameMixIn):
     """ Get all the defined metadata fields
     """
 
-    req = "SELECT MetaName,MetaType FROM FC_FileMetaFields WHERE MetaName LIKE '%%%s'" % suffix
+    req = "SELECT MetaName,MetaType FROM FC_FileMetaFields" # WHERE MetaName LIKE '%%%s'" % suffix
     result = self.db._query(req)
     if not result['OK']:
       return result
