@@ -4,6 +4,7 @@ Test of multi-VO user metadata handling. Assumes a running Dirac instance with t
 
 import unittest
 import os
+import sys
 import os.path
 
 from DIRAC.Core.Base.Script import parseCommandLine
@@ -126,3 +127,4 @@ if __name__ == '__main__':
   suite = unittest.defaultTestLoader.loadTestsFromTestCase(TestUserMetadataTestCase)
   suite.addTest(unittest.defaultTestLoader.loadTestsFromTestCase(testMetadata))
   testResult = unittest.TextTestRunner(verbosity=2).run(suite)
+  sys.exit(not testResult.wasSuccessful())
