@@ -10,12 +10,13 @@ from DIRAC.Core.Utilities.List import intListToString
 from DIRAC.DataManagementSystem.Client.MetaQuery import FILE_STANDARD_METAKEYS, \
     FILES_TABLE_METAKEYS, \
     FILEINFO_TABLE_METAKEYS
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MetaNameMixIn import MetaNameMixIn
 
-class FileMetadata:
-
+class FileMetadata(MetaNameMixIn):
   def __init__(self, database=None):
 
     self.db = database
+    MetaNameMixIn.__init__(self)
 
   def setDatabase(self, database):
     self.db = database
@@ -38,7 +39,7 @@ class FileMetadata:
     if not result['OK']:
       return result
     # existing pnames are fully qualified, so
-    fqPname = self._getMetaName(pname, credDict)
+    fqPname = self.getMetaName(pname, credDict)
     if fqPname in result['Value'].keys():
       return S_ERROR('The metadata %s is already defined for Directories' % fqPname)
 
@@ -72,10 +73,10 @@ class FileMetadata:
     return S_OK("Added new metadata: %d" % metadataID)
 
   def deleteMetadataField(self, pname, credDict):
-    """ Remove metadata field (only from user's own group)
+    """ Remove metadata field (only from user's own VO)
     """
 
-    fqPname = self._getMetaName(pname, credDict)
+    fqPname = self.getMetaName(pname, credDict)
     req = "DROP TABLE FC_FileMeta_%s" % fqPname
     result = self.db._update(req)
     error = ''
@@ -92,8 +93,7 @@ class FileMetadata:
     """ Get all the defined metadata fields
     """
 
-    suffix = self._getMetaNameSuffix(credDict)
-    req = "SELECT MetaName,MetaType FROM FC_FileMetaFields WHERE MetaName LIKE '%%%s'" % suffix
+    req = "SELECT MetaName,MetaType FROM FC_FileMetaFields"
     result = self.db._query(req)
     if not result['OK']:
       return result
@@ -104,8 +104,7 @@ class FileMetadata:
 
     # strip the suffix, if required (for clients)
     if strip_suffix:
-      metaDict = {key.replace(suffix, ''): value for key, value in metaDict.iteritems()
-                  if key.endswith(suffix)}
+      metaDict = self.stripSuffix(metaDict, credDict)
     return S_OK(metaDict)
 
   ###########################################################
@@ -132,7 +131,7 @@ class FileMetadata:
       return S_ERROR('File %s not found' % path)
 
     for metaName, metaValue in metadict.items():
-      fqMetaName = self._getMetaName(metaName, credDict)
+      fqMetaName = self.getMetaName(metaName, credDict)
       if fqMetaName not in metaFields:
         result = self.__setFileMetaParameter(fileID, metaName, metaValue, credDict)
       else:
@@ -149,10 +148,10 @@ class FileMetadata:
     return S_OK()
 
   def removeMetadata(self, path, rawMetadata, credDict):
-    """ Remove the specified metadata for the given file (for user's own group only)
+    """ Remove the specified metadata for the given file (for user's own VO only)
     """
     # get fully qualified metadata name
-    metadata = self._getMetaName(rawMetadata, credDict)
+    metadata = self.getMetaName(rawMetadata, credDict)
     # this would be fully qualified already
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
@@ -202,38 +201,12 @@ class FileMetadata:
 
   def __setFileMetaParameter(self, fileID, metaName, metaValue, credDict):
     """ Set an meta parameter - metadata which is not used in the the data
-        search operations.
-        Modified by JM: make metaName Dirac group aware.
+        search operations. metaName is VO aware.
     """
     result = self.db.insertFields('FC_FileMeta',
                                   ['FileID', 'MetaKey', 'MetaValue'],
-                                  [fileID, self._getMetaName(metaName, credDict), str(metaValue)])
+                                  [fileID, self.getMetaName(metaName, credDict), str(metaValue)])
     return result
-
-  def _getMetaName(self, meta, credDict):
-    """
-    Return a metadata name based on client supplied meta name and client credentials
-    For the base class it just returns the name passed in.
-    This method is a 'hook' and is meant to be overwritten by derived classes.
-
-    :param meta:  meta name
-    :param credDict: client credentials
-    :return: meta name
-    """
-
-    return meta
-
-  def _getMetaNameSuffix(self, credDict):
-    """
-    Get meta name suffix based on client credentials. The method is needed to be able
-    to return metadata w/o a suffix to the client.
-    This method is a 'hook' and is  meant to be overwritten by derived classes.
-
-    :param credDict: client credentials
-    :return: the suffix. And empty string for a base class.
-    """
-
-    return ''
 
   def setFileMetaParameter(self, path, metaName, metaValue, credDict):
 
@@ -305,9 +278,7 @@ class FileMetadata:
         metaTypeDict[meta] = 'NonSearchable'
 
     if strip_suffix:
-      suffix = self._getMetaNameSuffix(credDict)
-      metaDict = {key.replace(suffix, ''): value for key, value in metaDict.iteritems()
-                  if key.endswith(suffix)}
+      metaDict = self.stripSuffix(metaDict, credDict)
 
     result = S_OK(metaDict)
     result['MetadataType'] = metaTypeDict
@@ -552,7 +523,7 @@ class FileMetadata:
       elif meta in FILE_STANDARD_METAKEYS:
         standardMetaDict[meta] = value
       else:
-        userMetaDict[self._getMetaName(meta, credDict)] = value
+        userMetaDict[self.getMetaName(meta, credDict)] = value
 
     tablesAndConditions = []
     leftJoinTables = []
@@ -646,7 +617,7 @@ class FileMetadata:
       return result
     fileMetaKeys = result['Value'].keys() + FILE_STANDARD_METAKEYS.keys()
     fileMetaDict = dict(item for item in metaDict.items()
-                        if item[0] + self._getMetaNameSuffix(credDict) in fileMetaKeys)
+                        if self.getMetaName(item[0], credDict) in fileMetaKeys)
     fileList = []
     idLfnDict = {}
 
