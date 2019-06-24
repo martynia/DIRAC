@@ -31,3 +31,12 @@ class MetaNameMixIn:
     """
 
     return ''
+
+  def stripSuffix(self, metaDict, credDict):
+    """
+    Strip suffix pass through, just return the metadata dictionary.
+    :param metaDict: meta dictionary to modify.
+    :param credDict: credential dictionary.
+    :return: unchanged metaDict
+    """
+    return metaDict
