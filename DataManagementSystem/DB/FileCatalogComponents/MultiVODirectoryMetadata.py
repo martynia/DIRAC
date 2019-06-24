@@ -6,6 +6,7 @@ __RCSID__ = "$Id$"
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryMetadata import DirectoryMetadata
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MultiVOMetaNameMixIn import MultiVOMetaNameMixIn
 
+
 class MultiVODirectoryMetadata(MultiVOMetaNameMixIn, DirectoryMetadata):
   """
   MULti-VO FileCatalog plugin implementation.
@@ -14,4 +15,3 @@ class MultiVODirectoryMetadata(MultiVOMetaNameMixIn, DirectoryMetadata):
   def __init__(self, database=None):
     DirectoryMetadata.__init__(self, database=database)
     MultiVOMetaNameMixIn.__init__(self)
-

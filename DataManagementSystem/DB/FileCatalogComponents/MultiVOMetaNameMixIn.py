@@ -35,7 +35,7 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
     :return: VO specific suffix
     """
     vo = Registry.getGroupOption(credDict['group'], 'VO')
-    return '_' + vo.replace('-','_')
+    return '_' + vo.replace('-', '_')
 
   def stripSuffix(self, metaDict, credDict):
     """
@@ -47,5 +47,5 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
 
     suffix = self.getMetaNameSuffix(credDict)
     smetaDict = {key.rsplit(suffix, 1)[0]: value for key, value in metaDict.iteritems()
-              if key.endswith(suffix)}
+                 if key.endswith(suffix)}
     return smetaDict

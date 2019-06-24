@@ -361,8 +361,8 @@ class DirectoryMetadata(MetaNameMixIn):
         metaOwnerDict[meta] = 'OwnParameter'
 
     if strip_suffix:
-#      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
-#                  else key: value for key, value in metaDict.iteritems()}
+      #      metaDict = {key.replace(suffix, '') if key.endswith(suffix)
+      #                  else key: value for key, value in metaDict.iteritems()}
       metaDict = self.stripSuffix(metaDict, credDict)
       metaOwnerDict = self.stripSuffix(metaOwnerDict, credDict)
       metaTypeDict = self.stripSuffix(metaTypeDict, credDict)
