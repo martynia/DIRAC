@@ -84,7 +84,7 @@ def fileCatalogAPIWrapper(func):
       return repsResult
 
     if kwargs.get('printOutput'):
-      print self.pPrint.pformat(repsResult['Value'])
+      print (self.pPrint.pformat(repsResult['Value']))
 
     return repsResult
 
