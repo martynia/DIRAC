@@ -12,6 +12,7 @@ from DIRAC.DataManagementSystem.Client.MetaQuery import FILE_STANDARD_METAKEYS, 
     FILEINFO_TABLE_METAKEYS
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MetaNameMixIn import MetaNameMixIn
 
+
 class FileMetadata(MetaNameMixIn):
   def __init__(self, database=None):
 
@@ -135,7 +136,7 @@ class FileMetadata(MetaNameMixIn):
       if fqMetaName not in metaFields:
         result = self.__setFileMetaParameter(fileID, metaName, metaValue, credDict)
       else:
-        result = self.db.insertFields( 'FC_FileMeta_%s' % fqMetaName, ['FileID', 'Value'], [fileID, metaValue] )
+        result = self.db.insertFields('FC_FileMeta_%s' % fqMetaName, ['FileID', 'Value'], [fileID, metaValue])
         if not result['OK']:
           if result['Message'].find('Duplicate') != -1:
             req = "UPDATE FC_FileMeta_%s SET Value='%s' WHERE FileID=%d" % (fqMetaName, metaValue, fileID)
@@ -651,4 +652,3 @@ class FileMetadata(MetaNameMixIn):
       idLfnDict = result['Value']['Successful']
 
     return S_OK(idLfnDict)
-
