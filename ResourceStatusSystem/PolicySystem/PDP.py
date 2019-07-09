@@ -136,6 +136,7 @@ class PDP( object ):
 
     # Get policies that match self.decisionParams
     policiesThatApply = getPoliciesThatApply( self.decisionParams )
+    self.log.verbose("Policies that apply dict: ", policiesThatApply)
     if not policiesThatApply['OK']:
       return policiesThatApply
     policiesThatApply = policiesThatApply['Value']
