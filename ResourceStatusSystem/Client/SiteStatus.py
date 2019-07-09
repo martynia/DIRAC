@@ -143,6 +143,7 @@ class SiteStatus(object):
     :return: dict
     """
 
+    self.log.debug('Sites to be checked: ', siteName)
     cacheMatch = self.rssCache.match(siteName, '', '')
 
     self.log.debug('__getRSSSiteStatus')
