@@ -146,6 +146,7 @@ class SiteStatus(object):
     cacheMatch = self.rssCache.match(siteName, '', '')
 
     self.log.debug('__getRSSSiteStatus')
+    self.log.debug('Sites checked: ', siteName)
     self.log.debug(cacheMatch)
 
     return cacheMatch
