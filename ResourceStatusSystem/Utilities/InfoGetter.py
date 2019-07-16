@@ -83,6 +83,7 @@ def getPoliciesThatApply(decisionParams):
       configModule = Utils.voimport('DIRAC.ResourceStatusSystem.Policy.Configurations')
       policies = copy.deepcopy(configModule.POLICIESMETA)
       policyMeta = policies[policyType]
+      gLogger.debug("policies to be loaded: %s " % str(policies))
     except KeyError:
       continue
 
