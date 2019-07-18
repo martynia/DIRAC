@@ -54,10 +54,10 @@ class CacheFeederAgent(AgentModule):
     self.commands['FreeDiskSpace'] = [{'FreeDiskSpace': {}}]
 
     # PilotsCommand
-#    self.commands[ 'Pilots' ] = [
-#                                 { 'PilotsWMS' : { 'element' : 'Site', 'siteName' : None } },
-#                                 { 'PilotsWMS' : { 'element' : 'Resource', 'siteName' : None } }
-#                                 ]
+    self.commands[ 'Pilots' ] = [
+                                 { 'PilotsWMS' : { 'element' : 'Site', 'siteName' : None } },
+                                 { 'PilotsWMS' : { 'element' : 'Resource', 'siteName' : None } }
+                                 ]
 
     # FIXME: do not forget about hourly vs Always ...etc
     # AccountingCacheCommand
