@@ -148,11 +148,9 @@ class FileMetadata(MetaNameMixIn):
 
     return S_OK()
 
-  def removeMetadata(self, path, rawMetadata, credDict):
+  def removeMetadata(self, path, metadata, credDict):
     """ Remove the specified metadata for the given file (for user's own VO only)
     """
-    # get fully qualified metadata name
-    metadata = self.getMetaName(rawMetadata, credDict)
     # this would be fully qualified already
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
@@ -169,6 +167,8 @@ class FileMetadata(MetaNameMixIn):
 
     failedMeta = {}
     for meta in metadata:
+      # get fully qualified metadata name
+      meta = self.getMetaName(meta, credDict)
       if meta in metaFields:
         # Indexed meta case
         req = "DELETE FROM FC_FileMeta_%s WHERE FileID=%d" % (meta, fileID)
