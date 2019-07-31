@@ -111,8 +111,15 @@ class testMetadata(TestUserMetadataTestCase):
     # result = self.fc.getReplicasByMetadata(metaDict, path='/')
     # print result
     # self.assertTrue(result['OK'])
+    #
+    # meta remove lfn5  JMMetaInt6
+    path = self.lfn5
+    metadata=['JMMetaInt6']
+    metaDict = {path:metadata}
+    result = self.fc.removeMetadata(metaDict)
+    self.assertTrue(result['OK'])
 
-    # meta index -r
+    # meta index -r JMMetaInt6
     result = self.fc.deleteMetadataField('JMMetaInt6')
     self.assertTrue(result['OK'])
 
