@@ -3,7 +3,7 @@
     seconds will be assigned the "Stalled" state.
 """
 
-from __future__ import absolute_import
+from __future__ import print_function, absolute_import
 
 __RCSID__ = "$Id$"
 
@@ -294,22 +294,22 @@ the stalledTime limit.
   #############################################################################
   def __updateJobStatus(self, job, status, minorstatus=None):
     """ This method updates the job status in the JobDB, this should only be
-used to fail jobs due to the optimizer chain.
-"""
-    self.log.verbose("self.jobDB.setJobAttribute(%s,'Status','%s',update=True)" % (job, status))
+        used to fail jobs due to the optimizer chain.
+    """
+    self.log.verbose("self.jobDB.setJobStatus(%s, '%s')" % (job, status))
 
     if self.am_getOption('Enable', True):
-      result = self.jobDB.setJobAttribute(job, 'Status', status, update=True)
+      result = self.jobDB.setJobStatus(job, status)
     else:
       result = S_OK('DisabledMode')
 
     if result['OK']:
       if minorstatus:
-        self.log.verbose("self.jobDB.setJobAttribute(%s,'MinorStatus','%s',update=True)" % (job, minorstatus))
-        result = self.jobDB.setJobAttribute(job, 'MinorStatus', minorstatus, update=True)
+        self.log.verbose("self.jobDB.setJobStatus(%s, minor ='%s')" % (job, minorstatus))
+        result = self.jobDB.setJobStatus(job, minor=minorstatus)
 
     if not minorstatus:  # Retain last minor status for stalled jobs
-      result = self.jobDB.getJobAttributes(job, ['MinorStatus'])
+      result = self.jobDB.getJobStatus(job)
       if result['OK']:
         minorstatus = result['Value']['MinorStatus']
 
@@ -531,9 +531,9 @@ used to fail jobs due to the optimizer chain.
 
     # Remove those with Minor Status "Pending Requests"
     for jobID in jobIDs:
-      result = self.jobDB.getJobAttributes(jobID, ['Status', 'MinorStatus'])
+      result = self.jobDB.getJobStatus(jobID)
       if not result['OK']:
-        self.log.error('Failed to get job attributes', result['Message'])
+        self.log.error('Failed to get job status', result['Message'])
         continue
       if result['Value']['Status'] != "Completed":
         continue

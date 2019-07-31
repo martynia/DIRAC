@@ -1,6 +1,8 @@
 """ This object is a wrapper for setting and getting jobs states
 """
 
+from __future__ import print_function, absolute_import
+
 __RCSID__ = "$Id"
 
 import datetime
@@ -186,14 +188,13 @@ class JobState(object):
                                        date=updateTime, source=source)
 
   def getStatus(self):
-    result = self.jobDB.getJobAttributes(self.__jid, ['Status', 'MinorStatus'])
+    result = self.jobDB.getJobStatus(self.__jid)
     if not result['OK']:
       return result
     data = result['Value']
     if data:
       return S_OK((data['Status'], data['MinorStatus']))
-    else:
-      return S_ERROR('Job %d not found in the JobDB' % int(self.__jid))
+    return S_ERROR('Job %d not found in the JobDB' % int(self.__jid))
 
   right_setAppStatus = RIGHT_GET_INFO
 
@@ -214,7 +215,7 @@ class JobState(object):
   right_getAppStatus = RIGHT_GET_INFO
 
   def getAppStatus(self):
-    result = self.jobDB.getJobAttributes(self.__jid, ['ApplicationStatus'])
+    result = self.jobDB.getJobStatus(self.__jid)
     if result['OK']:
       result['Value'] = result['Value']['ApplicationStatus']
     return result

@@ -1,27 +1,17 @@
 comment: off
 
+ignore:
+  - ".*/[Tt]ests/.*"
+  - ".*/[Tt]est/.*"
+  - "^docs"
+  - "^container"
+  - "^tests"
+
 coverage:
   status:
     project:
-      default: off
-      unittest:
-      flags: unittest
-
-flags:
-  # filter the folder(s) you wish to measure by that flag
-  unittest:
-    # Exclude files from test and docs folders
-    paths:
-      - DIRAC/AccountingSystem
-      - DIRAC/ConfigurationSystem
-      - DIRAC/DataManagementSystem
-      - DIRAC/FrameworkSystem
-      - DIRAC/Interfaces
-      - DIRAC/MonitoringSystem
-      - DIRAC/RequestManagementSystem
-      - DIRAC/Resources
-      - DIRAC/ResourceStatusSystem
-      - DIRAC/StorageManagementSystem
-      - DIRAC/TransformationSystem
-      - DIRAC/Workflow
-      - DIRAC/WorkloadManagementSystem
+      default:
+        threshold: 0.03
+    patch:
+      default:
+        target: 0
