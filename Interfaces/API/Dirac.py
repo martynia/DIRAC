@@ -28,7 +28,6 @@ import tarfile
 import urllib
 import shlex
 import StringIO
-from functools import wraps
 
 import DIRAC
 from DIRAC import gConfig, gLogger, S_OK, S_ERROR
@@ -66,6 +65,7 @@ def parseArguments(args):
   for arg in args:
     argList += arg.split(',')
   return argList
+
 
 class Dirac(API):
   """
