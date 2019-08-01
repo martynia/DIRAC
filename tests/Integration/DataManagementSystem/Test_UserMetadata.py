@@ -12,6 +12,7 @@ from DIRAC.Core.Base.Script import parseCommandLine
 parseCommandLine()
 
 from DIRAC.Interfaces.API.Dirac import Dirac
+from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
 from DIRAC import gLogger
 from DIRAC.Core.Utilities.Time import toString
 
@@ -26,6 +27,7 @@ def random_dd(outfile, size_mb):
 class TestUserMetadataTestCase(unittest.TestCase):
   def setUp(self):
     self.dirac = Dirac()
+    self.fc = FileCatalog()
 
     self.lfn5 = '/gridpp/user/m/martynia/FC_test/test_file_10MB_v5.bin'
     self.dir5 = os.path.dirname(self.lfn5)
@@ -39,7 +41,7 @@ class TestUserMetadataTestCase(unittest.TestCase):
 
   def tearDown(self):
     # meta index -r
-    result = self.dirac.deleteMetadataField('JMMetaInt6')
+    result = self.fc.deleteMetadataField('JMMetaInt6')
     # delete a sole replica: dirac-dms-remove-files
     result = self.dirac.removeFile(self.lfn5)
     self.assertTrue(result['OK'])
@@ -54,73 +56,81 @@ class testMetadata(TestUserMetadataTestCase):
     self.assertEqual(result['Value']['Failed'], {})
 
     # meta index -f
-    result = self.dirac.addMetadataField('JMMetaInt6', 'INT', metaType='-f')
+    result = self.fc.addMetadataField('JMMetaInt6', 'INT', metaType='-f')
     self.assertTrue(result['OK'])
     self.assertNotEqual(result['Value'], 'Already exists')
     self.assertTrue(result['Value'].startswith('Added new metadata:'))
 
     # meta index -d
-    result = self.dirac.addMetadataField('JMTestDirectory6', 'INT', metaType='-d')
+    result = self.fc.addMetadataField('JMTestDirectory6', 'INT', metaType='-d')
     self.assertTrue(result['OK'])
     self.assertNotEqual(result['Value'], 'Already exists')
     self.assertTrue(result['Value'].startswith('Added new metadata:'))
 
     # meta show
-    result = self.dirac.getMetadataFields()
+    result = self.fc.getMetadataFields()
     self.assertTrue(result['OK'])
     self.assertDictContainsSubset({'JMMetaInt6': 'INT', }, result['Value']['FileMetaFields'])
     self.assertDictContainsSubset({'JMTestDirectory6': 'INT', }, result['Value']['DirectoryMetaFields'])
 
     # meta set
     metaDict6 = {'JMMetaInt6': 13}
-    result = self.dirac.setMetadata(self.lfn5, metaDict6)
+    result = self.fc.setMetadata(self.lfn5, metaDict6)
     self.assertTrue(result['OK'])
 
     metaDirDict6 = {'JMTestDirectory6': 126}
-    result = self.dirac.setMetadata(self.dir5, metaDirDict6)
+    result = self.fc.setMetadata(self.dir5, metaDirDict6)
     self.assertTrue(result['OK'])
 
     # find
-    result = self.dirac.findFilesByMetadata(metaDict6)
+    result = self.fc.findFilesByMetadata(metaDict6)
     self.assertTrue(result['OK'])
     self.assertIn(self.lfn5, result['Value'])
 
     # find
     metaDirDict = {'JMTestDirectory6': 126}
-    result = self.dirac.findDirectoriesByMetadata(metaDirDict, path='/')
+    result = self.fc.findDirectoriesByMetadata(metaDirDict, path='/')
     self.assertTrue(result['OK'])
     self.assertIn(self.dir5, result['Value'].values())
 
     # API call only
-    result = self.dirac.getFileUserMetadata(self.lfn5)
+    result = self.fc.getFileUserMetadata(self.lfn5)
     self.assertTrue(result['OK'])
     # 'Value': {'JMMetaInt6': 13L, 'JMMetaInt5': 12L, 'JMTestDirectory': 124L}
     self.assertDictContainsSubset({'JMMetaInt6': 13}, result['Value'])
     # file: return  enclosing directory
-    result = self.dirac.getDirectoryUserMetadata(self.lfn5)
+    result = self.fc.getDirectoryUserMetadata(self.lfn5)
     self.assertTrue(result['OK'])
     self.assertDictContainsSubset({'JMTestDirectory6': 126}, result['Value'])
     # directory only
-    result = self.dirac.getDirectoryUserMetadata(self.dir5)
+    result = self.fc.getDirectoryUserMetadata(self.dir5)
     self.assertTrue(result['OK'])
     self.assertDictContainsSubset({'JMTestDirectory6': 126}, result['Value'])
     # replicas
     # metaDict6={'JMMetaInt6':13}
-    # result = self.dirac.getReplicasByMetadata(metaDict, path='/')
+    # result = self.fc.getReplicasByMetadata(metaDict, path='/')
     # print result
     # self.assertTrue(result['OK'])
-
-    # meta index -r
-    result = self.dirac.deleteMetadataField('JMMetaInt6')
+    #
+    # meta remove lfn5  JMMetaInt6
+    path = self.lfn5
+    metadata = ['JMMetaInt6']
+    metaDict = {path: metadata}
+    result = self.fc.removeMetadata(metaDict)
     self.assertTrue(result['OK'])
 
-    result = self.dirac.deleteMetadataField('JMTestDirectory6')
+    # meta index -r JMMetaInt6
+    result = self.fc.deleteMetadataField('JMMetaInt6')
     self.assertTrue(result['OK'])
 
+    result = self.fc.deleteMetadataField('JMTestDirectory6')
+    self.assertTrue(result['OK'])
+
+  @unittest.expectedFailure
   def test_ReplicasByMetadata(self):
     metaDict6 = {'JMMetaInt6': 13}
-    result = self.dirac.getReplicasByMetadata(metaDict6, path='/')
-    self.assertFalse(result['OK'])
+    result = self.fc.getReplicasByMetadata(metaDict6, path='/')
+    self.assertTrue(result['OK'])
 
 
 if __name__ == '__main__':

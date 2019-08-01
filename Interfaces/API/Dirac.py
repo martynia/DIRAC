@@ -28,7 +28,6 @@ import tarfile
 import urllib
 import shlex
 import StringIO
-from functools import wraps
 
 import DIRAC
 from DIRAC import gConfig, gLogger, S_OK, S_ERROR
@@ -66,28 +65,6 @@ def parseArguments(args):
   for arg in args:
     argList += arg.split(',')
   return argList
-
-
-def fileCatalogAPIWrapper(func):
-  @wraps(func)
-  def wrapper(self, *args, **kwargs):
-
-    start = time.time()
-    repsResult = func(self, *args, **kwargs)
-    timing = time.time() - start
-    self.log.info('%s Lookup Time: %.2f seconds ' % (func.__name__, timing))
-    self.log.verbose(repsResult)
-    if not repsResult['OK']:
-      self.log.warn('%s: response no OK ', func.__name__)
-      self.log.warn(repsResult['Message'])
-      return repsResult
-
-    if kwargs.get('printOutput'):
-      print (self.pPrint.pformat(repsResult['Value']))
-
-    return repsResult
-
-  return wrapper
 
 
 class Dirac(API):
@@ -1294,120 +1271,6 @@ class Dirac(API):
       print(self.pPrint.pformat(repsResult))
 
     return S_OK(repsResult)
-
-  # User Metadata API
-  @fileCatalogAPIWrapper
-  def getDirectoryUserMetadata(self, path, timeout=120):
-    """
-
-    :param path: path to a directory or a file
-    :param printOutput: Optional flag to print result
-    :return: user metadata
-    """
-    fc = FileCatalog()
-    return fc.getDirectoryUserMetadata(path, timeout=timeout)
-
-  @fileCatalogAPIWrapper
-  def getFileUserMetadata(self, filepath, timeout=120):
-    """
-
-    :param filepath: path to a file (not directory)
-    :param printOutput: Optional flag to print result
-    :return: user file metadata
-    """
-
-    fc = FileCatalog()
-    return fc.getFileUserMetadata(filepath, timeout=timeout)
-
-  @fileCatalogAPIWrapper
-  def addMetadataField(self, fieldName, fieldType, metaType='-d', timeout=120):
-    """
-    Add a new metadata field of the given type. (File Catalog CLI: meta index)
-
-    :param fieldName: field name
-    :param fieldType: filed type
-    :param metaType:  meta type (-f or -d)
-    :param timeout:
-    :return:
-    """
-
-    fc = FileCatalog()
-    return fc.addMetadataField(fieldName, fieldType, metaType=metaType, timeout=timeout)
-
-  def deleteMetadataField(self, fieldName, timeout=120):
-    """ Delete the metadata field
-    """
-    fc = FileCatalog()
-    return fc.deleteMetadataField(fieldName, timeout=timeout)
-
-  def getMetadataFields(self, timeout=120):
-    """ Get all the metadata fields
-    """
-    fc = FileCatalog()
-    return fc.getMetadataFields(timeout=timeout)
-
-  def setMetadata(self, path, metadatadict, timeout=120):
-    """ Set metadata parameter for the given path
-    """
-    fc = FileCatalog()
-    return fc.setMetadata(path, metadatadict, timeout=timeout)
-
-  def setMetadataBulk(self, pathMetadataDict, timeout=120):
-    """ Set metadata parameter for the given path
-    """
-    fc = FileCatalog()
-    return fc.setMetadataBulk(pathMetadataDict, timeout=timeout)
-
-  def removeMetadata(self, pathMetadataDict, timeout=120):
-    """ Remove the specified metadata for the given path
-    """
-    fc = FileCatalog()
-    return fc.removeMetadata(pathMetadataDict, timeout=timeout)
-
-  def findDirectoriesByMetadata(self, metaDict, path='/', timeout=120):
-    """ Find all the directories satisfying the given metadata set
-    """
-    fc = FileCatalog()
-    return fc.findDirectoriesByMetadata(metaDict, path=path, timeout=timeout)
-
-  def getReplicasByMetadata(self, metaDict, path='/', allStatus=False, timeout=120):
-    """ Find all the files satisfying the given metadata set
-    """
-    fc = FileCatalog()
-    return fc.getReplicasByMetadata(metaDict, path=path, allStatus=allStatus, timeout=timeout)
-
-  def findFilesByMetadata(self, metaDict, path='/', timeout=120):
-
-    fc = FileCatalog()
-    return fc.findFilesByMetadata(metaDict, path=path, timeout=timeout)
-
-  def findFilesByMetadataDetailed(self, metaDict, path='/', timeout=120):
-    """ Find all the files satisfying the given metadata set
-    """
-    fc = FileCatalog()
-    return fc.findFilesByMetadataDetailed(metaDict, path=path, timeout=timeout)
-
-  def findFilesByMetadataWeb(self, metaDict, path, startItem, maxItems, timeout=120):
-    """ Find files satisfying the given metadata set
-    """
-    fc = FileCatalog()
-    return fc.findFilesByMetadataWeb(metaDict, path, startItem, maxItems, timeout=timeout)
-
-  def getCompatibleMetadata(self, metaDict, path='/', timeout=120):
-    """ Get metadata values compatible with the given metadata subset
-    """
-    fc = FileCatalog()
-    return fc.getCompatibleMetadata(metaDict, path=path, timeout=timeout)
-
-  def addMetadataSet(self, setName, setDict, timeout=120):
-    """ Add a new metadata set
-    """
-    pass  # server side broken
-
-  def getMetadataSet(self, setName, expandFlag, timeout=120):
-    """ Add a new metadata set
-    """
-    pass  # server side broken
 
   #############################################################################
   def addFile(self, lfn, fullPath, diracSE, fileGuid=None, printOutput=False):
