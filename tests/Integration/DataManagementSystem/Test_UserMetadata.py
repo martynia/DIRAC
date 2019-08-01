@@ -114,8 +114,8 @@ class testMetadata(TestUserMetadataTestCase):
     #
     # meta remove lfn5  JMMetaInt6
     path = self.lfn5
-    metadata=['JMMetaInt6']
-    metaDict = {path:metadata}
+    metadata = ['JMMetaInt6']
+    metaDict = {path: metadata}
     result = self.fc.removeMetadata(metaDict)
     self.assertTrue(result['OK'])
 
