@@ -220,7 +220,7 @@ class DirectoryMetadata(MetaNameMixIn):
     return S_OK()
 
   def removeMetadata(self, dpath, metadata, credDict):
-    """ Remove the specified metadata for the given directory
+    """ Remove the specified metadata for the given directory for users own VO
     """
     result = self.getMetadataFields(credDict)
     if not result['OK']:
@@ -236,6 +236,8 @@ class DirectoryMetadata(MetaNameMixIn):
 
     failedMeta = {}
     for meta in metadata:
+      # get fully qualified metadata name
+      meta = self.getMetaName(meta, credDict)
       if meta in metaFields:
         # Indexed meta case
         req = "DELETE FROM FC_Meta_%s WHERE DirID=%d" % (meta, dirID)
