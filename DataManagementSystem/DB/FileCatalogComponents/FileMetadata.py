@@ -16,8 +16,8 @@ from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MetaNameMixIn import Me
 class FileMetadata(MetaNameMixIn):
   def __init__(self, database=None):
 
+    super(FileMetadata, self).__init__()
     self.db = database
-    MetaNameMixIn.__init__(self)
 
   def setDatabase(self, database):
     self.db = database
