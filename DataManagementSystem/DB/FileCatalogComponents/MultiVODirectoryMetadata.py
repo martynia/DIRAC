@@ -14,4 +14,3 @@ class MultiVODirectoryMetadata(MultiVOMetaNameMixIn, DirectoryMetadata):
 
   def __init__(self, database=None):
     super(MultiVODirectoryMetadata, self).__init__(database=database)
-
