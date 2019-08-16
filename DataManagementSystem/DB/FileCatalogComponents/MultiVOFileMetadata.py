@@ -13,5 +13,4 @@ class MultiVOFileMetadata(MultiVOMetaNameMixIn, FileMetadata):
   """
 
   def __init__(self, database=None):
-    FileMetadata.__init__(self, database=database)
-    MultiVOMetaNameMixIn.__init__(self)
+    super(MultiVOFileMetadata, self).__init__(database=database)

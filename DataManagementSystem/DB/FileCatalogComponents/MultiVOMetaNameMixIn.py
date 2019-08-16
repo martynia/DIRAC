@@ -13,7 +13,7 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
   """
 
   def __init__(self):
-    MetaNameMixIn.__init__(self)
+    super(MultiVOMetaNameMixIn, self).__init__()
 
   def getMetaName(self, meta, credDict):
     """

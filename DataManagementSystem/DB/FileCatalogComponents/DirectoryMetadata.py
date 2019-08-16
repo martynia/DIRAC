@@ -15,8 +15,8 @@ class DirectoryMetadata(MetaNameMixIn):
 
   def __init__(self, database=None):
 
+    super(DirectoryMetadata, self).__init__()
     self.db = database
-    MetaNameMixIn.__init__(self)
 
   def setDatabase(self, database):
     self.db = database
