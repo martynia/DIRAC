@@ -96,14 +96,15 @@ class PivotedPilotSummaryTable:
                "  WHEN pivoted_eff.Done=0 THEN 0 \n" \
                "  WHEN pivoted_eff.Done=pivoted_eff.Done_Empty \n" \
                "  THEN 99.0 ELSE 0.0 END) AS PilotsPerJob,\n" \
-               " (pivoted_eff.Total - pivoted_eff.Aborted)/pivoted_eff.Total*100.0 AS Eff \nFROM \n("
-    eff_select_template = " CAST(pivoted_eff.{state} AS UNSIGNED) "
+               " (pivoted_eff.Total - pivoted_eff.Aborted)/pivoted_eff.Total*100.0 AS PilotJobEff \nFROM \n("
+    eff_select_template = " CAST(pivoted_eff.{state} AS UNSIGNED) AS {state} "
+#    eff_select_template = " CAST(pivoted_eff.{state} AS UNSIGNED) AS {state} "
     # now select the columns + the states:
     pivoted_eff = "SELECT %s,\n" % ', '.join(['pivoted_eff' + '.' + item  for item in self.columnList]) + \
                   ', '.join(eff_select_template.format(state=state) for state in self.pstates + ['Total']) + ", \n"
 
     finalQuery = pivoted_eff + eff_case + pivotedQuery + innerGroupBy + outerGroupBy
-    self.columns += [' Total', 'PilotsPerJob', 'Eff']
+    self.columns += [' Total', 'PilotsPerJob', 'PilotJobEff']
     return finalQuery
 
   def getColumnList(self):

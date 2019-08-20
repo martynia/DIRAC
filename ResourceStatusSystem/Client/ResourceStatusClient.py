@@ -11,7 +11,7 @@ from DIRAC import S_OK
 from DIRAC.Core.Base.Client import Client, createClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.FrameworkSystem.Client.NotificationClient import NotificationClient
-
+from DIRAC.ResourceStatusSystem.Client.ResourceManagementClient import prepareDict
 
 @createClient('ResourceStatus/ResourceStatus')
 class ResourceStatusClient(Client):
@@ -30,24 +30,46 @@ class ResourceStatusClient(Client):
     super(ResourceStatusClient, self).__init__(**kwargs)
     self.setServer('ResourceStatus/ResourceStatus')
 
-  def _prepare(self, columnNames, columnValues):
+  def insert(self, tableName, record):
     """
-    Convert 2 same size lists into a key->value dict. All Nonetype values are removed.
+    Insert a dictionary `record` as a row in table `tableName`
 
-    :param list columnNames: list containing column names, which are the keys in the returned dict
-    :param list columnValues: list of the corresponding values
+    :param str tableName: the name of the table
+    :param dict record: dictionary of record to insert in the table
 
-    :return: dict
+    :return: S_OK() || S_ERROR()
     """
 
-    sendDict = {}
+    return self._getRPC().insert(tableName, record)
 
-    # make each key name uppercase to match database column names (case sensitive)
-    for key, value in zip(columnNames, columnValues):
-      if value is not None:
-        sendDict[key] = value
+  def select(self, tableName, params=None):
+    """
+    Select rows from the table `tableName`
 
-    return sendDict
+    :param str tableName: the name of the table
+    :param dict record: dictionary of the selection parameters
+
+    :return: S_OK() || S_ERROR()
+    """
+
+    if params is None:
+      params = {}
+    return self._getRPC().select(tableName, params)
+
+  def delete(self, tableName, params=None):
+    """
+    Delect rows from the table `tableName`
+
+    :param str tableName: the name of the table
+    :param dict record: dictionary of the deletion parameters
+
+    :Returns:
+      S_OK() || S_ERROR()
+    """
+
+    if params is None:
+      params = {}
+    return self._getRPC().delete(tableName, params)
 
   ################################################################################
   # Element status methods - enjoy !
@@ -92,9 +114,9 @@ class ResourceStatusClient(Client):
     columnValues = [name, statusType, status, elementType, reason, dateEffective,
                     lastCheckTime, tokenOwner, tokenExpiration]
 
-    return self._getRPC().insert(element + tableType, self._prepare(columnNames, columnValues))
+    return self._getRPC().insert(element + tableType, prepareDict(columnNames, columnValues))
 
-  def selectStatusElement(self, element, tableType, name=None, statusType=None,
+  def selectStatusElement(self, element, tableType, name=None, statusType=None, vO=None,
                           status=None, elementType=None, reason=None,
                           dateEffective=None, lastCheckTime=None,
                           tokenOwner=None, tokenExpiration=None, meta=None, vo='all'):
@@ -133,14 +155,14 @@ class ResourceStatusClient(Client):
 
     :return: S_OK() || S_ERROR()
     """
-    columnNames = ["Name", "StatusType", "Status", "ElementType", "Reason",
+    columnNames = ["Name", "StatusType", "VO", "Status", "ElementType", "Reason",
                    "DateEffective", "LastCheckTime", "TokenOwner", "TokenExpiration", "Meta"]
-    columnValues = [name, statusType, status, elementType, reason, dateEffective,
+    columnValues = [name, statusType, vO, status, elementType, reason, dateEffective,
                     lastCheckTime, tokenOwner, tokenExpiration, meta]
 
-    return self._getRPC().select(element + tableType, self._prepare(columnNames, columnValues))
+    return self._getRPC().select(element + tableType, prepareDict(columnNames, columnValues))
 
-  def deleteStatusElement(self, element, tableType, name=None, statusType=None,
+  def deleteStatusElement(self, element, tableType, name=None, statusType=None, vO=None,
                           status=None, elementType=None, reason=None,
                           dateEffective=None, lastCheckTime=None,
                           tokenOwner=None, tokenExpiration=None, meta=None, vo='all'):
@@ -178,16 +200,16 @@ class ResourceStatusClient(Client):
 
     :return: S_OK() || S_ERROR()
     """
-    columnNames = ["Name", "StatusType", "Status", "ElementType", "Reason",
+    columnNames = ["Name", "StatusType", "VO", "Status", "ElementType", "Reason",
                    "DateEffective", "LastCheckTime", "TokenOwner", "TokenExpiration", "Meta"]
-    columnValues = [name, statusType, status, elementType, reason, dateEffective,
+    columnValues = [name, statusType, vO, status, elementType, reason, dateEffective,
                     lastCheckTime, tokenOwner, tokenExpiration, meta]
 
-    return self._getRPC().delete(element + tableType, self._prepare(columnNames, columnValues))
+    return self._getRPC().delete(element + tableType, prepareDict(columnNames, columnValues))
 
 
   def addOrModifyStatusElement(self, element, tableType, name=None,
-                               statusType=None, status=None,
+                               statusType=None, vO=None, status=None,
                                elementType=None, reason=None,
                                dateEffective=None, lastCheckTime=None,
                                tokenOwner=None, tokenExpiration=None, vo='all'):
@@ -224,14 +246,14 @@ class ResourceStatusClient(Client):
 
     :return: S_OK() || S_ERROR()
     """
-    columnNames = ["Name", "StatusType", "Status", "ElementType", "Reason",
+    columnNames = ["Name", "StatusType", "VO", "Status", "ElementType", "Reason",
                    "DateEffective", "LastCheckTime", "TokenOwner", "TokenExpiration"]
-    columnValues = [name, statusType, status, elementType, reason, dateEffective,
+    columnValues = [name, statusType, vO, status, elementType, reason, dateEffective,
                     lastCheckTime, tokenOwner, tokenExpiration]
 
-    return self._getRPC().addOrModify(element + tableType, self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify(element + tableType, prepareDict(columnNames, columnValues))
 
-  def modifyStatusElement(self, element, tableType, name=None, statusType=None,
+  def modifyStatusElement(self, element, tableType, name=None, statusType=None, vO=None,
                           status=None, elementType=None, reason=None,
                           dateEffective=None, lastCheckTime=None, tokenOwner=None,
                           tokenExpiration=None, vo='all'):
@@ -267,15 +289,15 @@ class ResourceStatusClient(Client):
 
     :return: S_OK() || S_ERROR()
     """
-    columnNames = ["Name", "StatusType", "Status", "ElementType", "Reason",
+    columnNames = ["Name", "StatusType", "VO", "Status", "ElementType", "Reason",
                    "DateEffective", "LastCheckTime", "TokenOwner", "TokenExpiration"]
-    columnValues = [name, statusType, status, elementType, reason, dateEffective,
+    columnValues = [name, statusType, vO, status, elementType, reason, dateEffective,
                     lastCheckTime, tokenOwner, tokenExpiration]
 
-    return self._getRPC().addOrModify(element + tableType, self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify(element + tableType, prepareDict(columnNames, columnValues))
 
   def addIfNotThereStatusElement(self, element, tableType, name=None,
-                                 statusType=None, status=None,
+                                 statusType=None, vO=None, status=None,
                                  elementType=None, reason=None,
                                  dateEffective=None, lastCheckTime=None,
                                  tokenOwner=None, tokenExpiration=None, vo='all'):
@@ -312,12 +334,12 @@ class ResourceStatusClient(Client):
 
     :return: S_OK() || S_ERROR()
     """
-    columnNames = ["Name", "StatusType", "Status", "ElementType", "Reason",
+    columnNames = ["Name", "StatusType", "VO", "Status", "ElementType", "Reason",
                    "DateEffective", "LastCheckTime", "TokenOwner", "TokenExpiration"]
-    columnValues = [name, statusType, status, elementType, reason, dateEffective,
+    columnValues = [name, statusType, vO, status, elementType, reason, dateEffective,
                     lastCheckTime, tokenOwner, tokenExpiration]
 
-    return self._getRPC().addIfNotThere(element + tableType, self._prepare(columnNames, columnValues))
+    return self._getRPC().addIfNotThere(element + tableType, prepareDict(columnNames, columnValues))
 
   ##############################################################################
   # Protected methods - Use carefully !!

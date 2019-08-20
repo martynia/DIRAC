@@ -676,14 +676,46 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
       for index, value in enumerate(row):
         if type(value) == decimal.Decimal:
           lrow[index]  = float(value)
+      # get the value of the Total column
+      if 'Total' in columnList:
+        total = lrow[columnList.index('Total')]
+      else:
+        total = 0
+      if 'PilotJobEff' in columnList:
+        eff = lrow[columnList.index('PilotJobEff')]
+      else:
+        eff = 0.
+      lrow.append(self._getElementStatus(total, eff))
       rows.append(tuple(lrow))
 # If not grouped by CE and more then 1 CE in the result:
     if multiple:
       columns.append('CE') # 'DestinationSite' re-mapped to 'CE' already
-
+    columns.append('Status')
     result['Records'] = rows
 
     return S_OK(result)
+
+  def _getElementStatus(self, total, eff):
+    """
+    Assign status to a site or resource based on pilot efficiency.
+    :param total: number of pilots to assign the status, otherwise 'Idle'
+    :param eff:  efficiency in %
+
+    :return: status string
+    """
+
+    # Evaluate the quality status of the Site/CE
+    if total > 10:
+      if eff < 25.:
+        return 'Bad'
+      elif eff < 60.:
+        return 'Poor'
+      elif eff < 85.:
+        return 'Fair'
+      else:
+        return 'Good'
+    else:
+      return 'Idle'
 
   def getPilotSummaryWeb(self, selectDict, sortList, startItem, maxItems):
     """ Get summary of the pilot jobs status by CE/site in a standard structure

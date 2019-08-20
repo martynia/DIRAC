@@ -53,6 +53,8 @@ class PilotEfficiencyPolicy(PolicyBase):
 
     # Pilot efficiency is now available directly from the command result, in percent:
     efficiency = commandResult.get('PilotJobEff', None)
+    # get the VO from the result, if present
+    result['VO'] = commandResult.get('VO', None)
 
     if efficiency is None:
       result[ 'Status' ] = 'Unknown'
