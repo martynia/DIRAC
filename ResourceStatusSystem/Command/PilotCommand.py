@@ -57,6 +57,7 @@ class PilotCommand(Command):
       - name : <str>
     """
 
+    self.log.debug("_prepareCommand: args:", self.args)
     if 'name' not in self.args:
       return S_ERROR('"name" not found in self.args')
     name = self.args['name']
@@ -65,10 +66,14 @@ class PilotCommand(Command):
       return S_ERROR('element is missing')
     element = self.args['element']
 
+    if 'vO' not in self.args:
+      return S_ERROR('_prepareCommand: "vO" not found in self.args')
+    vo = self.args['vO']
+
     if element not in ['Site', 'Resource']:
       return S_ERROR('"%s" is not Site nor Resource' % element)
 
-    return S_OK((element, name))
+    return S_OK((element, name, vo))
 
   def doNew(self, masterParams=None):
 
@@ -112,6 +117,7 @@ class PilotCommand(Command):
     if not pilotsResults['OK']:
       return pilotsResults
     pilotsResults = pilotsResults['Value']
+    pilotsResults = pilotsResultPivot['Value']
 
     if 'ParameterNames' not in pilotsResults:
       return S_ERROR('Wrong result dictionary, missing "ParameterNames"')
@@ -148,7 +154,7 @@ class PilotCommand(Command):
     params = self._prepareCommand()
     if not params['OK']:
       return params
-    element, name = params['Value']
+    element, name, vo = params['Value']
 
     if element == 'Site':
       # WMS returns Site entries with CE = 'Multiple'
@@ -159,10 +165,10 @@ class PilotCommand(Command):
       # You should never see this error
       return S_ERROR('"%s" is not  Site nor Resource' % element)
 
-    result = self.rmClient.selectPilotCache(site, ce)
+    result = self.rmClient.selectPilotCache(site, ce, vo)
     if result['OK']:
       result = S_OK([dict(zip(result['Columns'], res)) for res in result['Value']])
-
+    self.log.debug("PilotCommand doCache result: ", result)
     return result
 
   def doMaster(self):

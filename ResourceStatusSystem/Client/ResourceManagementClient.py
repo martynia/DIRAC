@@ -8,6 +8,25 @@ __RCSID__ = '$Id$'
 from DIRAC.Core.Base.Client import Client, createClient
 
 
+def prepareDict(columnNames, columnValues):
+  """
+  Convert 2 same size lists into a key->value dict. All Nonetype values are removed.
+
+  :param list columnNames: list containing column names, which are the keys in the returned dict
+  :param list columnValues: list of the corresponding values
+
+  :return: dict
+  """
+
+  paramsDict = {}
+
+  # make each key name uppercase to match database column names (case sensitive)
+  for key, value in zip(columnNames, columnValues):
+    if value is not None:
+      paramsDict[key] = value
+
+  return paramsDict
+
 @createClient('ResourceStatus/ResourceManagement')
 class ResourceManagementClient(Client):
   """
@@ -24,25 +43,6 @@ class ResourceManagementClient(Client):
 
     super(ResourceManagementClient, self).__init__(**kwargs)
     self.setServer('ResourceStatus/ResourceManagement')
-
-  def _prepare(self, columnNames, columnValues):
-    """
-    Convert 2 same size lists into a key->value dict. All Nonetype values are removed.
-
-    :param list columnNames: list containing column names, which are the keys in the returned dict
-    :param list columnValues: list of the corresponding values
-
-    :return: dict
-    """
-
-    sendDict = {}
-
-    # make each key name uppercase to match database column names (case sensitive)
-    for key, value in zip(columnNames, columnValues):
-      if value is not None:
-        sendDict[key] = value
-
-    return sendDict
 
   # AccountingCache Methods ....................................................
 
@@ -70,7 +70,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Name", "PlotType", "PlotName", "Result", "DateEffective", "LastCheckTime", "Meta"]
     columnValues = [name, plotType, plotName, result, dateEffective, lastCheckTime, meta]
 
-    return self._getRPC().select('AccountingCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('AccountingCache', prepareDict(columnNames, columnValues))
 
   def addOrModifyAccountingCache(self, name=None, plotType=None, plotName=None,
                                  result=None, dateEffective=None, lastCheckTime=None):
@@ -90,7 +90,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Name", "PlotType", "PlotName", "Result", "DateEffective", "LastCheckTime"]
     columnValues = [name, plotType, plotName, result, dateEffective, lastCheckTime]
 
-    return self._getRPC().addOrModify('AccountingCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('AccountingCache', prepareDict(columnNames, columnValues))
 
   def deleteAccountingCache(self, name=None, plotType=None, plotName=None,
                             result=None, dateEffective=None, lastCheckTime=None):
@@ -108,7 +108,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Name", "PlotType", "PlotName", "Result", "DateEffective", "LastCheckTime"]
     columnValues = [name, plotType, plotName, result, dateEffective, lastCheckTime]
 
-    return self._getRPC().delete('AccountingCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('AccountingCache', prepareDict(columnNames, columnValues))
 
   # GGUSTicketsCache Methods ...................................................
 
@@ -130,7 +130,7 @@ class ResourceManagementClient(Client):
     columnNames = ["GocSite", "Link", "OpenTickets", "Tickets", "LastCheckTime", "Meta"]
     columnValues = [gocSite, link, openTickets, tickets, lastCheckTime, meta]
 
-    return self._getRPC().select('GGUSTicketsCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('GGUSTicketsCache', prepareDict(columnNames, columnValues))
 
   def deleteGGUSTicketsCache(self, gocSite=None, link=None, openTickets=None,
                              tickets=None, lastCheckTime=None):
@@ -147,7 +147,7 @@ class ResourceManagementClient(Client):
     columnNames = ["GocSite", "Link", "OpenTickets", "Tickets", "LastCheckTime"]
     columnValues = [gocSite, link, openTickets, tickets, lastCheckTime]
 
-    return self._getRPC().delete('GGUSTicketsCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('GGUSTicketsCache', prepareDict(columnNames, columnValues))
 
   def addOrModifyGGUSTicketsCache(self, gocSite=None, link=None, openTickets=None,
                                   tickets=None, lastCheckTime=None):
@@ -164,7 +164,7 @@ class ResourceManagementClient(Client):
     columnNames = ["GocSite", "Link", "OpenTickets", "Tickets", "LastCheckTime"]
     columnValues = [gocSite, link, openTickets, tickets, lastCheckTime]
 
-    return self._getRPC().addOrModify('GGUSTicketsCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('GGUSTicketsCache', prepareDict(columnNames, columnValues))
 
   # DowntimeCache Methods ......................................................
 
@@ -206,7 +206,7 @@ class ResourceManagementClient(Client):
     columnValues = [downtimeID, element, name, startDate, endDate, severity, description, link,
                     dateEffective, lastCheckTime, gOCDBServiceType, meta]
 
-    return self._getRPC().select('DowntimeCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('DowntimeCache', prepareDict(columnNames, columnValues))
 
   def deleteDowntimeCache(self, downtimeID=None, element=None, name=None,
                           startDate=None, endDate=None, severity=None,
@@ -243,7 +243,7 @@ class ResourceManagementClient(Client):
     columnValues = [downtimeID, element, name, startDate, endDate, severity, description, link,
                     dateEffective, lastCheckTime, gOCDBServiceType]
 
-    return self._getRPC().delete('DowntimeCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('DowntimeCache', prepareDict(columnNames, columnValues))
 
   def addOrModifyDowntimeCache(self, downtimeID=None, element=None, name=None,
                                startDate=None, endDate=None, severity=None,
@@ -271,7 +271,7 @@ class ResourceManagementClient(Client):
     columnValues = [downtimeID, element, name, startDate, endDate, severity, description, link,
                     dateEffective, lastCheckTime, gOCDBServiceType]
 
-    return self._getRPC().addOrModify('DowntimeCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('DowntimeCache', prepareDict(columnNames, columnValues))
 
   # JobCache Methods ...........................................................
 
@@ -297,7 +297,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Site", "MaskStatus", "Efficiency", "Status", "LastCheckTime", "Meta"]
     columnValues = [site, maskStatus, efficiency, status, lastCheckTime, meta]
 
-    return self._getRPC().select('JobCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('JobCache', prepareDict(columnNames, columnValues))
 
   def deleteJobCache(self, site=None, maskStatus=None, efficiency=None,
                      status=None, lastCheckTime=None):
@@ -319,7 +319,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Site", "MaskStatus", "Efficiency", "Status", "LastCheckTime"]
     columnValues = [site, maskStatus, efficiency, status, lastCheckTime]
 
-    return self._getRPC().delete('JobCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('JobCache', prepareDict(columnNames, columnValues))
 
   def addOrModifyJobCache(self, site=None, maskStatus=None, efficiency=None,
                           status=None, lastCheckTime=None):
@@ -342,7 +342,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Site", "MaskStatus", "Efficiency", "Status", "LastCheckTime"]
     columnValues = [site, maskStatus, efficiency, status, lastCheckTime]
 
-    return self._getRPC().addOrModify('JobCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('JobCache', prepareDict(columnNames, columnValues))
 
   # TransferCache Methods ......................................................
 
@@ -368,7 +368,7 @@ class ResourceManagementClient(Client):
     columnNames = ["SourceName", "DestinationName", "Metric", "Value", "LastCheckTime", "Meta"]
     columnValues = [sourceName, destinationName, metric, value, lastCheckTime, meta]
 
-    return self._getRPC().select('TransferCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('TransferCache', prepareDict(columnNames, columnValues))
 
   def deleteTransferCache(self, sourceName=None, destinationName=None, metric=None,
                           value=None, lastCheckTime=None):
@@ -390,7 +390,7 @@ class ResourceManagementClient(Client):
     columnNames = ["SourceName", "DestinationName", "Metric", "Value", "LastCheckTime"]
     columnValues = [sourceName, destinationName, metric, value, lastCheckTime]
 
-    return self._getRPC().delete('TransferCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('TransferCache', prepareDict(columnNames, columnValues))
 
   def addOrModifyTransferCache(self, sourceName=None, destinationName=None, metric=None,
                                value=None, lastCheckTime=None):
@@ -408,11 +408,11 @@ class ResourceManagementClient(Client):
     columnNames = ["SourceName", "DestinationName", "Metric", "Value", "LastCheckTime"]
     columnValues = [sourceName, destinationName, metric, value, lastCheckTime]
 
-    return self._getRPC().addOrModify('TransferCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('TransferCache', prepareDict(columnNames, columnValues))
 
   # PilotCache Methods .........................................................
 
-  def selectPilotCache(self, site=None, cE=None, pilotsPerJob=None,
+  def selectPilotCache(self, site=None, cE=None,  vO=None, pilotsPerJob=None,
                        pilotJobEff=None, status=None, lastCheckTime=None, meta=None):
     '''
     Gets from TransferCache all rows that match the parameters given.
@@ -433,12 +433,12 @@ class ResourceManagementClient(Client):
        For example: meta={'columns': ['Name']} will return only the 'Name' column.
     :return: S_OK() || S_ERROR()
     '''
-    columnNames = ["Site", "CE", "PilotsPerJob", "PilotJobEff", "Status", "LastCheckTime", "Meta"]
-    columnValues = [site, cE, pilotsPerJob, pilotJobEff, status, lastCheckTime, meta]
+    columnNames = ["Site", "CE", "VO", "PilotsPerJob", "PilotJobEff", "Status", "LastCheckTime", "Meta"]
+    columnValues = [site, cE, vO, pilotsPerJob, pilotJobEff, status, lastCheckTime, meta]
 
-    return self._getRPC().select('PilotCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('PilotCache', prepareDict(columnNames, columnValues))
 
-  def deletePilotCache(self, site=None, cE=None, pilotsPerJob=None,
+  def deletePilotCache(self, site=None, cE=None,  vO=None, pilotsPerJob=None,
                        pilotJobEff=None, status=None, lastCheckTime=None):
     '''
     Deletes from TransferCache all rows that match the parameters given.
@@ -457,12 +457,12 @@ class ResourceManagementClient(Client):
     :type lastCheckTime: datetime, list
     :return: S_OK() || S_ERROR()
     '''
-    columnNames = ["Site", "CE", "PilotsPerJob", "PilotJobEff", "Status", "LastCheckTime"]
-    columnValues = [site, cE, pilotsPerJob, pilotJobEff, status, lastCheckTime]
+    columnNames = ["Site", "CE", "VO", "PilotsPerJob", "PilotJobEff", "Status", "LastCheckTime"]
+    columnValues = [site, cE, vO,  pilotsPerJob, pilotJobEff, status, lastCheckTime]
 
-    return self._getRPC().delete('PilotCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('PilotCache', prepareDict(columnNames, columnValues))
 
-  def addOrModifyPilotCache(self, site=None, cE=None, ownerGroup=None, pilotsPerJob=None,
+  def addOrModifyPilotCache(self, site=None, cE=None, vO=None, pilotsPerJob=None,
                             pilotJobEff=None, status=None, lastCheckTime=None):
     '''
     Adds or updates-if-duplicated to PilotCache. Using `site` and `cE`
@@ -471,19 +471,19 @@ class ResourceManagementClient(Client):
     :param str site: name of the site
     :param str cE: name of the CE of 'Multiple' if all site CEs are considered
     :param float pilotsPerJob: measure calculated
-    :param flaot pilotJobEff: percentage
+    :param float pilotJobEff: percentage
     :param str status: status of the CE / Site
     :param datetime lastCheckTime: measure calculated
     :return: S_OK() || S_ERROR()
     '''
-    columnNames = ["Site", "CE", "PilotsPerJob", "PilotJobEff", "Status", "LastCheckTime"]
-    columnValues = [site, cE, pilotsPerJob, pilotJobEff, status, lastCheckTime]
+    columnNames = ["Site", "CE", "VO", "PilotsPerJob", "PilotJobEff", "Status", "LastCheckTime"]
+    columnValues = [site, cE, vO, pilotsPerJob, pilotJobEff, status, lastCheckTime]
 
-    return self._getRPC().addOrModify('PilotCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('PilotCache', prepareDict(columnNames, columnValues))
 
   # PolicyResult Methods .......................................................
 
-  def selectPolicyResult(self, element=None, name=None, policyName=None,
+  def selectPolicyResult(self, element=None, name=None, vO=None, policyName=None,
                          statusType=None, status=None, reason=None,
                          lastCheckTime=None, meta=None):
     '''
@@ -509,12 +509,12 @@ class ResourceManagementClient(Client):
         For example: meta={'columns': ['Name']} will return only the 'Name' column.
     :return: S_OK() || S_ERROR()
     '''
-    columnNames = ["Element", "Name", "PolicyName", "StatusType", "Status", "Reason", "LastCheckTime", "Meta"]
-    columnValues = [element, name, policyName, statusType, status, reason, lastCheckTime, meta]
+    columnNames = ["Element", "Name", "VO", "PolicyName", "StatusType", "Status", "Reason", "LastCheckTime", "Meta"]
+    columnValues = [element, name, vO, policyName, statusType, status, reason, lastCheckTime, meta]
 
-    return self._getRPC().select('PolicyResult', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('PolicyResult', prepareDict(columnNames, columnValues))
 
-  def deletePolicyResult(self, element=None, name=None, policyName=None,
+  def deletePolicyResult(self, element=None, name=None, vO=None, policyName=None,
                          statusType=None, status=None, reason=None,
                          dateEffective=None, lastCheckTime=None):
     '''
@@ -538,12 +538,12 @@ class ResourceManagementClient(Client):
     :type lastCheckTime: datetime, list
     :return: S_OK() || S_ERROR()
     '''
-    columnNames = ["Element", "Name", "PolicyName", "StatusType", "Status", "Reason", "DateEffective", "LastCheckTime"]
-    columnValues = [element, name, policyName, statusType, status, reason, dateEffective, lastCheckTime]
+    columnNames = ["Element", "Name", "VO", "PolicyName", "StatusType", "Status", "Reason", "DateEffective", "LastCheckTime"]
+    columnValues = [element, name, vO, policyName, statusType, status, reason, dateEffective, lastCheckTime]
 
-    return self._getRPC().delete('PolicyResult', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('PolicyResult', prepareDict(columnNames, columnValues))
 
-  def addOrModifyPolicyResult(self, element=None, name=None, policyName=None,
+  def addOrModifyPolicyResult(self, element=None, name=None, vO=None, policyName=None,
                               statusType=None, status=None, reason=None,
                               dateEffective=None, lastCheckTime=None):
     '''
@@ -562,10 +562,11 @@ class ResourceManagementClient(Client):
     :param datetime lastCheckTime: time-stamp setting last time the policy result was checked
     :return: S_OK() || S_ERROR()
     '''
-    columnNames = ["Element", "Name", "PolicyName", "StatusType", "Status", "Reason", "DateEffective", "LastCheckTime"]
-    columnValues = [element, name, policyName, statusType, status, reason, dateEffective, lastCheckTime]
+    columnNames = ["Element", "Name", 'VO', "PolicyName", "StatusType",
+                   "Status", "Reason", "DateEffective", "LastCheckTime"]
+    columnValues = [element, name, vO, policyName, statusType, status, reason, dateEffective, lastCheckTime]
 
-    return self._getRPC().addOrModify('PolicyResult', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('PolicyResult', prepareDict(columnNames, columnValues))
 
   # SpaceTokenOccupancyCache Methods ...........................................
 
@@ -594,7 +595,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Endpoint", "Token", "Total", "Guaranteed", "Free", "LastCheckTime", "Meta"]
     columnValues = [endpoint, token, total, guaranteed, free, lastCheckTime, meta]
 
-    return self._getRPC().select('SpaceTokenOccupancyCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().select('SpaceTokenOccupancyCache', prepareDict(columnNames, columnValues))
 
   def deleteSpaceTokenOccupancyCache(self, endpoint=None, token=None,
                                      total=None, guaranteed=None, free=None,
@@ -619,7 +620,7 @@ class ResourceManagementClient(Client):
     columnNames = ["Endpoint", "Token", "Total", "Guaranteed", "Free", "LastCheckTime"]
     columnValues = [endpoint, token, total, guaranteed, free, lastCheckTime]
 
-    return self._getRPC().delete('SpaceTokenOccupancyCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().delete('SpaceTokenOccupancyCache', prepareDict(columnNames, columnValues))
 
   def addOrModifySpaceTokenOccupancyCache(self, endpoint=None, token=None,
                                           total=None, guaranteed=None, free=None,
@@ -640,6 +641,6 @@ class ResourceManagementClient(Client):
     columnNames = ["Endpoint", "Token", "Total", "Guaranteed", "Free", "LastCheckTime"]
     columnValues = [endpoint, token, total, guaranteed, free, lastCheckTime]
 
-    return self._getRPC().addOrModify('SpaceTokenOccupancyCache', self._prepare(columnNames, columnValues))
+    return self._getRPC().addOrModify('SpaceTokenOccupancyCache', prepareDict(columnNames, columnValues))
 
 # EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF#EOF
