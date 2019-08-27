@@ -18,7 +18,7 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
   def getMetaName(self, meta, credDict):
     """
     Return a fully-qualified metadata name based on client-suplied metadata name and
-    client credentials. User group is added to the metadata passed in.
+    client credentials. User VO is added to the metadata passed in.
 
     :param meta: metadata name
     :param credDict: client credentials
@@ -39,7 +39,8 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
 
   def stripSuffix(self, metaDict, credDict):
     """
-    Strip the suffix from all keys which contain it, leaving other keys intact.
+    Strip the suffix from all keys which contain it, removing all other keys.
+
     :param metaDict: original dict
     :param credDict: user credential dictionary
     :return: a new dict with modified keys

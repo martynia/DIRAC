@@ -317,7 +317,8 @@ class DirectoryMetadata(MetaNameMixIn):
   def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True, strip_suffix=False):
     """ Get metadata for the given directory aggregating metadata for the directory itself
         and for all the parent directories if inherited flag is True. Get also the non-indexed
-        metadata parameters.
+        metadata parameters. If the method is used in a call chain which supplies data back to
+        the client strip_suffix should  be set to True, otherwise the default should be used.
     """
 
     result = self.db.dtree.getPathIDs(path)
@@ -531,7 +532,6 @@ class DirectoryMetadata(MetaNameMixIn):
     if not result['OK']:
       return result
     metaTypeDict = result['Value']
-    # strip the suffix
     metaTypeDict = self.stripSuffix(metaTypeDict, credDict)
 
     resultDict = {}
@@ -625,6 +625,7 @@ class DirectoryMetadata(MetaNameMixIn):
       dirList = []
       first = True
       for meta, value in finalMetaDict.items():
+        fqmeta = self.getMetaName(meta, credDict)
         if value == "Missing":
           result = self.__findSubdirMissingMeta(fqmeta, pathSelection)
         else:
