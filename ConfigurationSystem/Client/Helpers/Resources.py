@@ -144,7 +144,7 @@ def getQueues(siteList=None, ceList=None, ceTypeList=None, community=None, mode=
         continue
       if community:
         comList = gConfig.getValue('/Resources/Sites/%s/%s/VO' % (grid, site), [])
-        if comList and community not in comList:
+        if comList and community.lower() not in [cl.lower() for cl in comList]:
           continue
       siteCEParameters = {}
       result = gConfig.getOptionsDict('/Resources/Sites/%s/%s/CEs' % (grid, site))
@@ -157,7 +157,7 @@ def getQueues(siteList=None, ceList=None, ceTypeList=None, community=None, mode=
       for ce in ces:
         if mode:
           ceMode = gConfig.getValue('/Resources/Sites/%s/%s/CEs/%s/SubmissionMode' % (grid, site, ce), 'Direct')
-          if not ceMode or ceMode != mode:
+          if not ceMode or ceMode.lower() != mode.lower():
             continue
         if ceTypeList:
           ceType = gConfig.getValue('/Resources/Sites/%s/%s/CEs/%s/CEType' % (grid, site, ce), '')
@@ -167,7 +167,7 @@ def getQueues(siteList=None, ceList=None, ceTypeList=None, community=None, mode=
           continue
         if community:
           comList = gConfig.getValue('/Resources/Sites/%s/%s/CEs/%s/VO' % (grid, site, ce), [])
-          if comList and community not in comList:
+          if comList and community.lower() not in [cl.lower() for cl in comList]:
             continue
         ceOptionsDict = dict(siteCEParameters)
         result = gConfig.getOptionsDict('/Resources/Sites/%s/%s/CEs/%s' % (grid, site, ce))
@@ -181,7 +181,7 @@ def getQueues(siteList=None, ceList=None, ceTypeList=None, community=None, mode=
         for queue in queues:
           if community:
             comList = gConfig.getValue('/Resources/Sites/%s/%s/CEs/%s/Queues/%s/VO' % (grid, site, ce, queue), [])
-            if comList and community not in comList:
+            if comList and community.lower() not in [cl.lower() for cl in comList]:
               continue
           resultDict.setdefault(site, {})
           resultDict[site].setdefault(ce, ceOptionsDict)
@@ -304,34 +304,42 @@ def getFilterConfig(filterID):
   return gConfig.getOptionsDict('Resources/LogFilters/%s' % filterID)
 
 
-def getInfoAboutProviders(ofWhat=None, providerName=None, option='', section=''):
+def getInfoAboutProviders(of=None, providerName=None, option='', section=''):
   """ Get the information about providers
 
-      :param basestring ofWhat: provider of what(Id, Proxy or etc.) need to look,
-             don't set to get list of instance of what this providers
+      :param basestring of: provider of what(Id, Proxy or etc.) need to look,
+             None, "all" to get list of instance of what this providers
       :param basestring providerName: provider name,
-             don't set to get list of providers names
+             None, "all" to get list of providers names
       :param basestring option: option name that need to get,
-             don't set to get all sections in section that set in argument section
-             set to 'all' to get all options in a section
-      :param basestring section: section path in root section of provider
+             None, "all" to get all options in a section
+      :param basestring section: section path in root section of provider,
+             "all" to get options in all sections
 
       :return: S_OK()/S_ERROR()
   """
-  if not ofWhat:
+  if not of or of == "all":
     result = gConfig.getSections(gBaseResourcesSection)
     if not result['OK']:
       return result
     return S_OK([i.replace('Providers', '') for i in result['Value']])
-  if not providerName:
-    return gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, ofWhat))
-  if not option:
+  if not providerName or providerName == "all":
+    return gConfig.getSections('%s/%sProviders' % (gBaseResourcesSection, of))
+  if not option or option == 'all':
     if not section:
-      return gConfig.getOptionsDict("%s/%sProviders/%s" % (gBaseResourcesSection, ofWhat, providerName))
+      return gConfig.getOptionsDict("%s/%sProviders/%s" % (gBaseResourcesSection, of, providerName))
+    elif section == "all":
+      resDict = {}
+      relPath = "%s/%sProviders/%s/" % (gBaseResourcesSection, of, providerName)
+      result = gConfig.getConfigurationTree(relPath)
+      if not result['OK']:
+        return result
+      for key, value in result['Value'].items():
+        if value:
+          resDict[key.replace(relPath, '')] = value
+      return S_OK(resDict)
     else:
-      return gConfig.getSections('%s/%sProviders/%s/%s/' % (gBaseResourcesSection, ofWhat, providerName, section))
-  elif option == 'all':
-    return gConfig.getOptions('%s/%sProviders/%s/%s/' % (gBaseResourcesSection, ofWhat, providerName, section))
+      return gConfig.getSections('%s/%sProviders/%s/%s/' % (gBaseResourcesSection, of, providerName, section))
   else:
-    return S_OK(gConfig.getValue('%s/%sProviders/%s/%s/%s' % (gBaseResourcesSection, ofWhat, providerName,
+    return S_OK(gConfig.getValue('%s/%sProviders/%s/%s/%s' % (gBaseResourcesSection, of, providerName,
                                                               section, option)))

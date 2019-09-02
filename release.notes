@@ -1,8 +1,24 @@
-[v7r1-pre1]
+[v7r2-pre1]
+
+*ResourceStatusSystem
+CHANGE: (#4235) Removes locals() way of passing parameters
+
+*tests
+NEW: (#4179) Set up Gitlab CI pipeline using Docker containers
+
+[v7r1-pre5]
+
+*Core
+NEW: initial support for mysql8
+NEW: (#4236) DISET - pass the client DIRAC version as part of the request description structure
 
 *Configuration
 CHANGE: (#4157) add new helper methods for IdP/Proxy Providers, OAuthManager. Add methods that 
         read DN options in dirac user section
+NEW: (#4241) Slave configuration servers are automatically updated as part of the new configuration 
+     changes commit
+NEW: (#4241) Configuration Server - added forceGlobalConfigurationUpdate() interface to force all 
+     registered service to update their configuration
 
 *Framework
 CHANGE: (#4157) add possibility to work with Proxy Providers and "clean" proxy without 
@@ -11,12 +27,19 @@ CHANGE: (#4157) add possibility to work with Proxy Providers and "clean" proxy w
 *Resources
 NEW: (#4157) ProxyProvider resources with implementation for DIRAC CA and PUSP proxy providers
 
-[v7r0-pre20]
+[v7r0-pre24]
 
 FIX: (#3962) use print function instead of print statement
 FIX: (#3962) remove the usage of the long suffix to distinguish between long and int
 FIX: (#3962) convert octal literals to new syntax
 NEW: (#3962) Add pylint test to check python 3 compatibility
+
+*Configuration
+CHANGE: (#4249) The flag UpdatePilotCStoJSONFile has been moved to Operations/[]/Pilot section
+
+*Framework
+CHANGE: (#4180) Removed local MySQL handling (DIRACOS won't have install it)
+CHANGE: (#4180) Removed setup of old portal
 
 *Accounting
 CHANGE: (Multi)AccountingDB - Grouping Type and Object loader together with the MonitoringSystem ones.
@@ -39,6 +62,8 @@ CHANGE: (#3890) remove JobStateSync service
 CHANGE: (#3873) Watchdog: use Profiler instead of ProcessMonitor
 NEW: (#4163) SiteDirectors send by default Pilot3 (flag for pilot2 is still kept)
 FIX: (#4163) removed unicode_literals (messes up things with DEncode)
+NEW: (#4224) PilotWrapper can get the Pilot files from a list of locations
+CHANGE: (#4224) PilotWrapper is compatible with several python versions
 
 *Core
 NEW: (#3744) Add update method to the ElasticSearchDB.py to update or if not available create the values 
@@ -49,10 +74,15 @@ FIX: check for empty /etc/grid-security/certificates dir
 NEW: (#3842) Add createClient decorator to add wrapper for all export_ functions automatically
 NEW: (#3678) dirac-install can install a non released code directly from the git repository
 FIX: (#3931) AuthManager - modified to work with the case of unregistered DN in credDict
+FIX: (#4182) Add CountryName OID and be more permissive in the String type for decoding VOMSExtensions
+FIX: (#4211) change orders of @deprecated and @classmethod decorators in X509Chain
+NEW: (#4229) dirac-install defines XRD_RUNFORKHANDLER environment variable
 
 *TransformationSystem
 NEW: (#4124) InputDataQuery and OutputDataQuery parameters can be set for Transformations before 
      they are added to the transformation system. Solves #4071
+CHANGE: (#4238) TransformationDB.getTransformationMetaQuery returns ENOENT if no meta query exists
+FIX: (#4238) InputDataAgent: silence warnings about transformations not having a input data query
 
 *ProductionManagement
 NEW: (#3703) ProductionManagement system is introduced
@@ -60,8 +90,16 @@ NEW: (#3703) ProductionManagement system is introduced
 *Interfaces
 CHANGE: (#4163) removed deprecated methods from Dirac.py
 
+*Resources
+FIX: (#4229) add proxy location as a virtual user for xroot urls
+FIX: (#4234) future import in executeBatch script that prevented the pilot deployment on SSH CE, fixes #4233
+FIX: (#4231) SE __executeMethod: only pass protocols parameter to getTransportURL
+
 *ResourceStatusSystem
 CHANGE: (#4177) use the ObjectLoader for Clients, in PEP
+
+*Monitoring
+FIX: MonitoringReporter - make processResords() method thread safe, fixes #4193
 
 *tests
 NEW: Add ChangeESFlag.py script to modify useES flag in dirac.cfg. To be integrated with Jenkins code.
@@ -69,6 +107,7 @@ CHANGE: (#3760) Use the above Client classes instead of invoking RPCClient()
 NEW: (#3744) Added performance tests for ES and MySQL for WMS DB backends
 NEW: (#3744) Added miniInstallDIRAC function for Jenkins jobs
 FIX: (#4177) restored test of JobsMonitor().JobParameters
+NEW: (#4224) added a test for PilotWrapper
 
 *Docs
 FIX: Better dirac.cfg example configuration for web
@@ -77,6 +116,53 @@ NEW: Added script (docs/Tools/UpdateDiracCFG.py) to collate the ConfigTemplate.c
      files into the main dirac.cfg file
 CHANGE: (#4110) updated basic tutorial for CC7 instead of SLC6.     
 NEW: (#4170) added Production system documentation
+CHANGE: (#4224) Pilot 3 is the default
+
+[v6r22p7]
+
+*Core
+FIX: (#4253) Workflow - accept unicode file path to workflow XML
+
+*WMS
+NEW: (#4205) Statistics of Pilot submission is sent to Accounting System by SiteDirector.
+FIX: (#4250) use host credentials to query the SandboxMetadataDB for async removal
+
+*Resources
+CHANGE: (#4242) DFC SEManagerDB: only acquire the lock if the cache needs to be modified
+FIX: (#4251) preamble attribute was missing in SSHBatchComputingElement causing an error 
+     in _submitJobHost()
+
+*DMS
+FIX: (#4248) SEManager correct order of calls at init
+
+[v6r22p6]
+
+*Core
+CHANGE: (#4203) A VO with diracos extension, must be able to install the main diracos from DIRAC repository.
+
+*TS
+CHANGE: (#4218) do not set Job type 'hospital'
+
+[v6r22p5]
+
+*WMS
+CHANGE: (#4217) Sandbox: Adding OwnerDN and OwnerGroup for DelayedExternalDeletion
+
+*DMS
+CHANGE: (#4202) relax permissions on getLFNForGUID
+
+*Resources
+FIX: (#4200) re-allow the use of the gsiftp cache in the SE
+CHANGE: (#4206) Storage - improved treatment for the case without SpaceToken in SpaceOccupancy
+
+[v6r22p4]
+
+*Core
+NEW: (#4181) Allow to install an extension of DIRACOS
+
+*Docs
+FIX: (#4187) Create a TransformationAgent Plugin -- more concrete 
+     descriptions for adding a plugin to AllowedPlugins
 
 [v6r22p3]
 
@@ -163,6 +249,40 @@ CHANGE: (#4119) added note on MultiProcessor jobs preparation
 FIX: (#4119) Not lhcb but dteam (for DIRAC certification)
 FIX: (#4139) client_dms.sh not lhcb specific
 CHANGE:(#4140) adapt transformation certification tests to dteam VO
+
+[v6r21p15]
+
+*WMS
+CHANGE: (#4214) Add an argument to the constructor of SandboxStoreClient for using in scripts 
+        that cannot use the DB directly
+
+*DMS
+NEW: (#4171) ArchiveFiles Request Operation: to create a tarball out of a list of LFNs
+NEW: (#4171) CheckMigration Request Operation to hold the request progress until the attached 
+             LFNs are migrated to tape
+NEW: (#4171) FCOnlyStorage StorageElement plugin to register LFNs without physical replica to 
+             conserve LFN metadata when they are archived, for example
+NEW: (#4171) dirac-dms-create-archive-request command to create a request to archive a list of 
+             LFNs and remove their physical copies
+NEW: (#4171) dirac-dms-create-moving-request command to move LFNs from a to b with optional 
+             "CheckMigration" step. as it uses the ReplicateAndRegister operation, transfer via 
+             FTS is also possible
+FIX: (#4171) FileCatalogClient: add "addFileAncestors" to list of "write functions"
+
+[v6r21p14]
+
+*DMS
+FIX: (#4192) dirac-dms-clean-directory correct usage message for list of arguments
+FIX: (#4192) dirac-dms-clean-directory now properly prints error messages
+FIX: (#4192) dirac-dms-clean-directory will now also clean empty directories
+FIX: (#4192) FileCatalog.DirectoryMetadata: prevent error when removeMetadataDirectory is 
+     called on empty list of directories, triggered when calling removeDirectory 
+     on non-existing directory
+FIX: (#4192) FileCatalog.DirectoryTreeBase: prevent maximum recursion depth exception 
+     when calling remove directory with illegal path
+
+*Resources
+CHANGE: (#4191) Storages: catch specific DPM/Globus error code when creating existing directory
 
 [v6r21p13]
 

@@ -14,6 +14,7 @@ from DIRAC.Core.Utilities.ReturnValues import S_OK, S_ERROR, isReturnStructure
 from DIRAC.Core.Utilities import Time
 from DIRAC.ConfigurationSystem.Client.Config import gConfig
 from DIRAC.FrameworkSystem.Client.Logger import gLogger
+from DIRAC.Core.Security.Properties import CS_ADMINISTRATOR
 
 
 def getServiceOption(serviceInfo, optionName, defaultValue):
@@ -134,10 +135,11 @@ class RequestHandler(object):
       message = "Method %s for action %s does not return a S_OK/S_ERROR!" % (actionTuple[1], actionTuple[0])
       gLogger.error(message)
       retVal = S_ERROR(message)
-    self.__logRemoteQueryResponse(retVal, time.time() - startTime)
+    elapsedTime = time.time() - startTime
+    self.__logRemoteQueryResponse(retVal, elapsedTime)
     result = self.__trPool.send(self.__trid, retVal)  # this will delete the value from the S_OK(value)
     del retVal
-    return result
+    return S_OK([result, elapsedTime])
 
 #####
 #
@@ -408,8 +410,9 @@ class RequestHandler(object):
     if not isReturnStructure(uReturnValue):
       gLogger.error("Message does not return a S_OK/S_ERROR", msgName)
       uReturnValue = S_ERROR("Message %s does not return a S_OK/S_ERROR" % msgName)
-    self.__logRemoteQueryResponse(uReturnValue, time.time() - startTime)
-    return uReturnValue
+    elapsedTime = time.time() - startTime
+    self.__logRemoteQueryResponse(uReturnValue, elapsedTime)
+    return S_OK([uReturnValue, elapsedTime])
 
 ####
 #
@@ -496,9 +499,25 @@ class RequestHandler(object):
   @staticmethod
   def export_echo(data):
     """
-    This method used for testing the performance of a service
+    This method is used for testing performance of the service
+
+    :param str data: data to be sent back to the caller
+
+    :return: S_OK, Value is the input data
     """
     return S_OK(data)
+
+  types_refreshConfiguration = [bool]
+  auth_refreshConfiguration = [CS_ADMINISTRATOR]
+
+  @staticmethod
+  def export_refreshConfiguration(fromMaster):
+    """
+    Force refreshing the configuration data
+
+    :param bool fromMaster: flag to refresh from the master configuration service
+    """
+    return gConfig.forceRefresh(fromMaster=fromMaster)
 
 ####
 #
@@ -556,6 +575,9 @@ class RequestHandler(object):
     if 'actionTuple' not in self.serviceInfoDict:
       return ('Unknown yet', )
     return self.serviceInfoDict['actionTuple']
+
+  def srv_getClientVersion(self):
+    return self.serviceInfoDict.get("clientVersion")
 
   @classmethod
   def srv_getURL(cls):

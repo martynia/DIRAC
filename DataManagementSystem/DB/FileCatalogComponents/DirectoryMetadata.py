@@ -856,6 +856,8 @@ class DirectoryMetadata(MetaNameMixIn):
   def removeMetadataForDirectory(self, dirList, credDict):
     """ Remove all the metadata for the given directory list
     """
+    if not dirList:
+      return S_OK({'Successful': {}, 'Failed': {}})
 
     failed = {}
     successful = {}

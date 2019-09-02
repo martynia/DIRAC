@@ -160,9 +160,16 @@ function installSite(){
 
   if [ $ALTERNATIVE_MODULES ]
   then
-    echo "Installing from non-release code"
-    installOptions+="--module=$ALTERNATIVE_MODULES "
+     echo "Installing from non-release code"
+     if [[ -d $ALTERNATIVE_MODULES ]]
+     then
+	 installOptions+="--source=$ALTERNATIVE_MODULES"
+     else
+	 installOptions+="--module=$ALTERNATIVE_MODULES "
+     fi
   fi
+
+  
 
   echo '==> Installing with options' $installOptions $SERVERINSTALLDIR/install.cfg
   
@@ -176,6 +183,14 @@ function installSite(){
   echo '==> Done installing, now configuring'
   source $SERVERINSTALLDIR/bashrc
   dirac-configure $SERVERINSTALLDIR/install.cfg $DEBUG
+  if [ $? -ne 0 ]
+  then
+    echo 'ERROR: dirac-configure failed'
+    return
+  fi
+
+  echo '=> The pilot flag should be False'
+  dirac-configure -o /Operations/Defaults/Pilot/UpdatePilotCStoJSONFile=False -FDMH $DEBUG
   if [ $? -ne 0 ]
   then
     echo 'ERROR: dirac-configure failed'
@@ -210,8 +225,14 @@ function fullInstallDIRAC(){
   killRunsv
 
   # install ElasticSearch locally
-  installES
-
+  if [[ -z $NoSQLDB_HOST || $NoSQLDB_HOST == "localhost" ]]
+  then
+      echo "Installing ElasticSearch locally"
+      installES
+  else
+      echo "NoSQLDB_HOST != localhost, skipping local ElasticSearch install"
+  fi
+  
   #basic install, with only the CS (and ComponentMonitoring) running, together with DB InstalledComponentsDB, which is needed)
   installSite
   if [ $? -ne 0 ]
@@ -420,6 +441,23 @@ function miniInstallDIRAC(){
 
 
 function clean(){
+
+  echo '==> [clean]'
+
+  #### make sure we're using the server
+  cd $SERVERINSTALLDIR
+  if [ $? -ne 0 ]
+  then
+    echo 'ERROR: cannot change to ' $SERVERINSTALLDIR
+    return
+  fi
+  source bashrc
+  if [ $? -ne 0 ]
+  then
+    echo 'ERROR: cannot source bashrc'
+    return
+  fi
+  ####
 
   # Uninstalling the services
   diracUninstallServices
