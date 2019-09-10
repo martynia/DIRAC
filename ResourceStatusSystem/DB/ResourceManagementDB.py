@@ -177,6 +177,7 @@ class JobCache(rmsBase):
                     'mysql_charset': 'utf8'}
 
   site = Column( 'Site', String( 64 ), nullable = False, primary_key = True )
+  vo = Column('VO', String(64), nullable=False, primary_key=True, server_default='all')
   status = Column( 'Status', String( 16 ), nullable = False )
   efficiency = Column( 'Efficiency', Float(asdecimal=False), nullable = False, server_default = '0')
   maskstatus = Column( 'MaskStatus', String( 32 ), nullable = False )
@@ -188,6 +189,7 @@ class JobCache(rmsBase):
     """
 
     self.site = dictionary.get( 'Site', self.site )
+    self.vo = dictionary.get('VO', self.vo)
     self.status = dictionary.get( 'Status', self.status )
     self.efficiency = dictionary.get( 'Efficiency', self.efficiency )
     self.maskstatus = dictionary.get( 'MaskStatus', self.maskstatus )
@@ -198,7 +200,7 @@ class JobCache(rmsBase):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.site, self.status, self.efficiency, self.maskstatus, self.lastchecktime]
+    return [self.site, self.vo, self.status, self.efficiency, self.maskstatus, self.lastchecktime]
 
 
 class PilotCache(rmsBase):
@@ -211,6 +213,7 @@ class PilotCache(rmsBase):
 
   site = Column( 'Site', String( 64 ), nullable = False, primary_key = True )
   ce = Column( 'CE', String( 64 ), nullable = False, primary_key = True )
+  vo = Column('VO', String(64), nullable=False, primary_key=True, server_default='all')
   status = Column( 'Status', String( 16 ), nullable = False )
   pilotjobeff = Column( 'PilotJobEff', Float(asdecimal=False), nullable = False, server_default = '0' )
   pilotsperjob = Column( 'PilotsPerJob', Float(asdecimal=False), nullable = False, server_default = '0')
@@ -226,6 +229,7 @@ class PilotCache(rmsBase):
 
     self.site = dictionary.get( 'Site', self.site )
     self.ce = dictionary.get( 'CE', self.ce )
+    self.vo = dictionary.get('VO', self.vo)
     self.status = dictionary.get( 'Status', self.status )
     self.pilotjobeff = dictionary.get( 'PilotJobEff', self.pilotjobeff )
     self.pilotsperjob = dictionary.get( 'PilotsPerJob', self.pilotsperjob )
@@ -236,7 +240,7 @@ class PilotCache(rmsBase):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.site, self.ce, self.status, self.pilotjobeff, self.pilotsperjob, self.lastchecktime]
+    return [self.site, self.ce, self.vo, self.status, self.pilotjobeff, self.pilotsperjob, self.lastchecktime]
 
 
 class PolicyResult(rmsBase):
@@ -251,6 +255,7 @@ class PolicyResult(rmsBase):
   statustype = Column( 'StatusType', String( 16 ), nullable = False, server_default = '', primary_key = True )
   element = Column( 'Element', String( 32 ), nullable = False, primary_key = True )
   name = Column( 'Name', String( 64 ), nullable = False, primary_key = True )
+  vo = Column('VO', String(64), nullable=False, primary_key=True, server_default='all')
   status = Column( 'Status', String( 16 ), nullable = False )
   reason = Column( 'Reason', String( 512 ), nullable = False, server_default = 'Unspecified' )
   dateeffective = Column( 'DateEffective', DateTime, nullable = False )
@@ -268,6 +273,7 @@ class PolicyResult(rmsBase):
     self.statustype = dictionary.get( 'StatusType', self.statustype )
     self.element = dictionary.get( 'Element', self.element )
     self.name = dictionary.get( 'Name', self.name )
+    self.vo = dictionary.get('VO', self.vo)
     self.status = dictionary.get( 'Status', self.status )
     self.reason = dictionary.get( 'Reason', self.reason )
     self.dateeffective = dictionary.get( 'DateEffective', self.dateeffective.replace(microsecond = 0)
@@ -280,7 +286,7 @@ class PolicyResult(rmsBase):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.policyname, self.statustype, self.element, self.name,
+    return [self.policyname, self.statustype, self.element, self.name, self.vo,
             self.status, self.reason, self.dateeffective, self.lastchecktime]
 
 

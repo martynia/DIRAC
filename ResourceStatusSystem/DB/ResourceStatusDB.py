@@ -59,6 +59,7 @@ class ElementStatusBase(object):
 
   name = Column( 'Name', String( 64 ), nullable = False, primary_key = True )
   statustype = Column( 'StatusType', String( 128 ), nullable = False, server_default = 'all', primary_key = True )
+  vo = Column('VO', String(64), nullable=False, primary_key=True, server_default='all')
   status = Column( 'Status', String( 8 ), nullable = False, server_default = '' )
   reason = Column( 'Reason', String( 512 ), nullable = False, server_default = 'Unspecified' )
   dateeffective = Column( 'DateEffective', DateTime, nullable = False )
@@ -80,6 +81,7 @@ class ElementStatusBase(object):
 
     self.name = dictionary.get( 'Name', self.name )
     self.statustype = dictionary.get( 'StatusType', self.statustype )
+    self.vo = dictionary.get('VO', self.vo)
     self.status = dictionary.get( 'Status', self.status )
     self.reason = dictionary.get( 'Reason', self.reason )
     self.dateeffective = dictionary.get( 'DateEffective', self.dateeffective )
@@ -96,7 +98,7 @@ class ElementStatusBase(object):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.name, self.statustype, self.status, self.reason,
+    return [self.name, self.statustype, self.vo, self.status, self.reason,
             self.dateeffective, self.tokenexpiration, self.elementtype,
             self.lastchecktime, self.tokenowner]
 
@@ -106,12 +108,13 @@ class ElementStatusBaseWithID(ElementStatusBase):
 
       This is almost the same as ElementStatusBase, with the following differences:
       - there's an autoincrement ID column which is also the primary key
-      - the name and statusType components are not part of the primary key
+      - the name and statusType and vo components are not part of the primary key
   """
 
   id = Column( 'ID', BigInteger, nullable = False, autoincrement= True, primary_key = True )
   name = Column( 'Name', String( 64 ), nullable = False )
   statustype = Column( 'StatusType', String( 128 ), nullable = False, server_default = 'all' )
+  vo = Column('VO', String(64), nullable=False, server_default='all')
   status = Column( 'Status', String( 8 ), nullable = False, server_default = '' )
   reason = Column( 'Reason', String( 512 ), nullable = False, server_default = 'Unspecified' )
   dateeffective = Column( 'DateEffective', DateTime, nullable = False )
@@ -134,7 +137,7 @@ class ElementStatusBaseWithID(ElementStatusBase):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.id, self.name, self.statustype, self.status, self.reason,
+    return [self.id, self.name, self.statustype, self.vo, self.status, self.reason,
             self.dateeffective, self.tokenexpiration, self.elementtype,
             self.lastchecktime, self.tokenowner]
 
