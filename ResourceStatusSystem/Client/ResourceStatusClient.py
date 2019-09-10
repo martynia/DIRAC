@@ -100,7 +100,7 @@ class ResourceStatusClient(object):
     return RPCClient("ResourceStatus/ResourceStatus").insert(element + tableType, self._prepare(locals()))
 
   def selectStatusElement(self, element, tableType, name=None, statusType=None,
-                          status=None, elementType=None, reason=None,
+                          vO=None, status=None, elementType=None, reason=None,
                           dateEffective=None, lastCheckTime=None,
                           tokenOwner=None, tokenExpiration=None, meta=None):
     '''
