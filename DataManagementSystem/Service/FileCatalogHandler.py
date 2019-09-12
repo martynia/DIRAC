@@ -22,7 +22,6 @@ from DIRAC.Core.DISET.RequestHandler import RequestHandler, getServiceOption
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.FrameworkSystem.Client.MonitoringClient import gMonitor
 from DIRAC.DataManagementSystem.DB.FileCatalogDB import FileCatalogDB
-from DIRAC.DataManagementSystem.DB.FileCatalogComponents import Utilities
 
 # This is a global instance of the FileCatalogDB class
 gFileCatalogDB = None
