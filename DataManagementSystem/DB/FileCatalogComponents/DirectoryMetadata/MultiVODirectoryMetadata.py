@@ -3,7 +3,7 @@
 
 __RCSID__ = "$Id$"
 
-from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryMetadata import DirectoryMetadata
+from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryMetadata.DirectoryMetadata import DirectoryMetadata
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MultiVOMetaNameMixIn import MultiVOMetaNameMixIn
 
 
