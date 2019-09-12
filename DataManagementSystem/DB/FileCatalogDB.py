@@ -69,8 +69,8 @@ class FileCatalogDB(DB):
                                          ("dtree", "DirectoryManager"),
                                          ("fileManager", "FileManager"),
                                          ("datasetManager", "DatasetManager"),
-                                         ("dmeta", "MultiVODirectoryMetadata"),
-                                         ("fmeta", "MultiVOFileMetadata")]:
+                                         ("dmeta", "DirectoryMetadata"),
+                                         ("fmeta", "FileMetadata")]:
 
       result = self.__loadCatalogComponent(componentType, databaseConfig[componentType])
       if not result['OK']:
