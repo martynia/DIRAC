@@ -6,6 +6,7 @@ import unittest
 import os
 import sys
 import os.path
+from __future__ import division
 
 from DIRAC.Core.Base.Script import parseCommandLine
 
@@ -13,8 +14,6 @@ parseCommandLine()
 
 from DIRAC.Interfaces.API.Dirac import Dirac
 from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
-
-from __future__ import division
 
 def random_dd(outfile, size_mb):
   import os

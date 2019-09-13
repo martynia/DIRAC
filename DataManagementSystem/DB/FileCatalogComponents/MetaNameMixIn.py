@@ -1,6 +1,6 @@
 """ DIRAC base MixIn class to manage file metadata and directory names.
 """
-
+from __future__ import division
 
 class MetaNameMixIn(object):
 

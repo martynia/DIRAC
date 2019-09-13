@@ -3,6 +3,8 @@
 
 __RCSID__ = "$Id$"
 
+from __future__ import division
+
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MetaNameMixIn import MetaNameMixIn
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 
