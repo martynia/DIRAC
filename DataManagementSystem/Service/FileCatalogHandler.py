@@ -490,11 +490,11 @@ class FileCatalogHandler(RequestHandler):
     """ Get all the metadata fields. Client gets metadata keys not fully qualified (w/o the suffix).
         restrict output for user's own VO fields.
     """
-    resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials(), strip_suffix=True)
+    resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials(), enableStripping=True)
     if not resultDir['OK']:
       return resultDir
 
-    resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials(), strip_suffix=True)
+    resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials(), enableStripping=True)
     if not resultFile['OK']:
       return resultFile
 
@@ -528,9 +528,9 @@ class FileCatalogHandler(RequestHandler):
     """ Get all the metadata valid for the given directory path.
         Client gets metadata w/o the VO suffix.
     """
-    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=False)
+    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), enableStripping=False)
     gLogger.debug("Directory metadata RPC (before stripping)", metaDict)
-    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
+    metaDict = gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), enableStripping=True)
     gLogger.debug("Directory metadata RPC (after stripping)", metaDict)
     # code below breaks client-side checks
 
@@ -541,7 +541,7 @@ class FileCatalogHandler(RequestHandler):
   def export_getFileUserMetadata(self, path):
     """ Get all the metadata valid for the given file and suffix. Client gets metadata key w/o the suffix
     """
-    metaDict = gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials(), strip_suffix=True)
+    metaDict = gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials(), enableStripping=True)
     gLogger.debug("File metadata RPC", metaDict)
 
     return metaDict
