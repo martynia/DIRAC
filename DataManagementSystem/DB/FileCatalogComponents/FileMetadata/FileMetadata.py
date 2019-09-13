@@ -41,13 +41,13 @@ class FileMetadata(MetaNameMixIn):
       return result
     # existing pnames are fully qualified, so
     fqPname = self.getMetaName(pname, credDict)
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       return S_ERROR('The metadata %s is already defined for Directories' % fqPname)
 
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       if ptype.lower() == result['Value'][fqPname].lower():
         return S_OK('Already exists')
       else:

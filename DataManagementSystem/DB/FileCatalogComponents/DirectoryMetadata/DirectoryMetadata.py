@@ -43,7 +43,7 @@ class DirectoryMetadata(MetaNameMixIn):
     if not result['OK']:
       return result
 
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       if ptype.lower() == result['Value'][fqPname].lower():
         return S_OK('Already exists')
       return S_ERROR('Attempt to add an existing metadata with different type: %s/%s' %
