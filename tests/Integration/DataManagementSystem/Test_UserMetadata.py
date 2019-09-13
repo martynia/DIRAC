@@ -13,14 +13,13 @@ parseCommandLine()
 
 from DIRAC.Interfaces.API.Dirac import Dirac
 from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
-from DIRAC import gLogger
-from DIRAC.Core.Utilities.Time import toString
 
+from __future__ import division
 
 def random_dd(outfile, size_mb):
   import os
   with open(outfile, 'w') as f:
-    for i in range((int(size_mb) * 2 ** 20) / 512):
+    for i in range(int(size_mb * 2**20 / 512)):
       f.write(os.urandom(512))
 
 
@@ -52,7 +51,7 @@ class testMetadata(TestUserMetadataTestCase):
   def test_AddQueryRemove(self):
     result = self.dirac.getLfnMetadata(self.lfn5)
     self.assertTrue(result['OK'])
-    self.assertTrue(self.lfn5 in result['Value']['Successful'].keys())
+    self.assertTrue(self.lfn5 in result['Value']['Successful'])
     self.assertEqual(result['Value']['Failed'], {})
 
     # meta index -f
@@ -70,8 +69,8 @@ class testMetadata(TestUserMetadataTestCase):
     # meta show
     result = self.fc.getMetadataFields()
     self.assertTrue(result['OK'])
-    self.assertDictContainsSubset({'JMMetaInt6': 'INT', }, result['Value']['FileMetaFields'])
-    self.assertDictContainsSubset({'JMTestDirectory6': 'INT', }, result['Value']['DirectoryMetaFields'])
+    self.assertDictContainsSubset({'JMMetaInt6': 'INT'}, result['Value']['FileMetaFields'])
+    self.assertDictContainsSubset({'JMTestDirectory6': 'INT'}, result['Value']['DirectoryMetaFields'])
 
     # meta set
     metaDict6 = {'JMMetaInt6': 13}
@@ -96,7 +95,6 @@ class testMetadata(TestUserMetadataTestCase):
     # API call only
     result = self.fc.getFileUserMetadata(self.lfn5)
     self.assertTrue(result['OK'])
-    # 'Value': {'JMMetaInt6': 13L, 'JMMetaInt5': 12L, 'JMTestDirectory': 124L}
     self.assertDictContainsSubset({'JMMetaInt6': 13}, result['Value'])
     # file: return  enclosing directory
     result = self.fc.getDirectoryUserMetadata(self.lfn5)
