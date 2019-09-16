@@ -4,8 +4,8 @@ from __future__ import division
 
 class MetaNameMixIn(object):
 
-  def __init__(self, *args, **kwargs):
-    pass
+  #def __init__(self, *args, **kwargs):
+  #  pass
 
   def getMetaName(self, meta, credDict):
     """
