@@ -15,6 +15,7 @@ parseCommandLine()
 from DIRAC.Interfaces.API.Dirac import Dirac
 from DIRAC.Resources.Catalog.FileCatalog import FileCatalog
 
+
 def random_dd(outfile, size_mb):
   import os
   with open(outfile, 'w') as f:

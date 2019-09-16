@@ -2,6 +2,7 @@
 """
 from __future__ import division
 
+
 class MetaNameMixIn(object):
 
   def getMetaName(self, meta, credDict):

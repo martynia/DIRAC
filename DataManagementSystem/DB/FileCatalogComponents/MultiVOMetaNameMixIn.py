@@ -12,7 +12,7 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
   """
   MULti-VO MetaName MixIn implementation.
   """
-  
+
   def getMetaName(self, meta, credDict):
     """
     Return a fully-qualified metadata name based on client-suplied metadata name and
