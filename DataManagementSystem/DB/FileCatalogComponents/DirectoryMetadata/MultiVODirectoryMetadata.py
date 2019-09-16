@@ -1,9 +1,8 @@
 """ DIRAC Multi VO FileCatalog plugin class to manage directory metadata for multiple VO.
 """
+from __future__ import division
 
 __RCSID__ = "$Id$"
-
-from __future__ import division
 
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.DirectoryMetadata.DirectoryMetadata import DirectoryMetadata
 from DIRAC.DataManagementSystem.DB.FileCatalogComponents.MultiVOMetaNameMixIn import MultiVOMetaNameMixIn
