@@ -1,12 +1,12 @@
 """
 Test of multi-VO user metadata handling. Assumes a running Dirac instance with the (master?) FileCatalog
 """
+from __future__ import division
 
 import unittest
 import os
 import sys
 import os.path
-from __future__ import division
 
 from DIRAC.Core.Base.Script import parseCommandLine
 
