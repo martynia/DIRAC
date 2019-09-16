@@ -1,5 +1,6 @@
 """ DIRAC Multi VO MixIn class to manage file metadata and directory for multiple VO.
 """
+from __future__ import division
 
 __RCSID__ = "$Id$"
 
@@ -11,10 +12,7 @@ class MultiVOMetaNameMixIn(MetaNameMixIn):
   """
   MULti-VO MetaName MixIn implementation.
   """
-
-  def __init__(self, *args, **kwargs):
-    super(MultiVOMetaNameMixIn, self).__init__(*args, **kwargs)
-
+  
   def getMetaName(self, meta, credDict):
     """
     Return a fully-qualified metadata name based on client-suplied metadata name and

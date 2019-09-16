@@ -43,7 +43,7 @@ class DirectoryMetadata(MetaNameMixIn):
     if not result['OK']:
       return result
 
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       if ptype.lower() == result['Value'][fqPname].lower():
         return S_OK('Already exists')
       return S_ERROR('Attempt to add an existing metadata with different type: %s/%s' %
@@ -95,7 +95,7 @@ class DirectoryMetadata(MetaNameMixIn):
         result["Message"] = error + "; " + result["Message"]
     return result
 
-  def getMetadataFields(self, credDict, strip_suffix=False):
+  def getMetadataFields(self, credDict, enableStripping=False):
     """ Get all the defined metadata fields
     """
 
@@ -108,7 +108,7 @@ class DirectoryMetadata(MetaNameMixIn):
     for row in result['Value']:
       metaDict[row[0]] = row[1]
     # strip the VO suffix, if required
-    if strip_suffix:
+    if enableStripping:
       metaDict = self.stripSuffix(metaDict, credDict)
 
     return S_OK(metaDict)
@@ -314,11 +314,11 @@ class DirectoryMetadata(MetaNameMixIn):
 
     return S_OK(metaDict)
 
-  def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True, strip_suffix=False):
+  def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True, enableStripping=False):
     """ Get metadata for the given directory aggregating metadata for the directory itself
         and for all the parent directories if inherited flag is True. Get also the non-indexed
         metadata parameters. If the method is used in a call chain which supplies data back to
-        the client strip_suffix should  be set to True, otherwise the default should be used.
+        the client enableStripping should  be set to True, otherwise the default should be used.
     """
 
     result = self.db.dtree.getPathIDs(path)
@@ -363,7 +363,7 @@ class DirectoryMetadata(MetaNameMixIn):
       for meta in result['Value']:
         metaOwnerDict[meta] = 'OwnParameter'
 
-    if strip_suffix:
+    if enableStripping:
       metaDict = self.stripSuffix(metaDict, credDict)
       metaOwnerDict = self.stripSuffix(metaOwnerDict, credDict)
       metaTypeDict = self.stripSuffix(metaTypeDict, credDict)

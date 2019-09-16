@@ -41,13 +41,13 @@ class FileMetadata(MetaNameMixIn):
       return result
     # existing pnames are fully qualified, so
     fqPname = self.getMetaName(pname, credDict)
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       return S_ERROR('The metadata %s is already defined for Directories' % fqPname)
 
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
-    if fqPname in result['Value'].keys():
+    if fqPname in result['Value']:
       if ptype.lower() == result['Value'][fqPname].lower():
         return S_OK('Already exists')
       else:
@@ -90,7 +90,7 @@ class FileMetadata(MetaNameMixIn):
         result["Message"] = error + "; " + result["Message"]
     return result
 
-  def getFileMetadataFields(self, credDict, strip_suffix=False):
+  def getFileMetadataFields(self, credDict, enableStripping=False):
     """ Get all the defined metadata fields
     """
 
@@ -104,7 +104,7 @@ class FileMetadata(MetaNameMixIn):
       metaDict[row[0]] = row[1]
 
     # strip the suffix, if required (for clients)
-    if strip_suffix:
+    if enableStripping:
       metaDict = self.stripSuffix(metaDict, credDict)
     return S_OK(metaDict)
 
@@ -247,7 +247,7 @@ class FileMetadata(MetaNameMixIn):
 
     return S_OK(metaDict)
 
-  def getFileUserMetadata(self, path, credDict, strip_suffix=False):
+  def getFileUserMetadata(self, path, credDict, enableStripping=False):
     """ Get metadata for the given file
     """
     # First file metadata
@@ -278,7 +278,7 @@ class FileMetadata(MetaNameMixIn):
       for meta in result['Value']:
         metaTypeDict[meta] = 'NonSearchable'
 
-    if strip_suffix:
+    if enableStripping:
       metaDict = self.stripSuffix(metaDict, credDict)
 
     result = S_OK(metaDict)
