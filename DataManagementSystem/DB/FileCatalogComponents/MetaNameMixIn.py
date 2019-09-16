@@ -4,9 +4,6 @@ from __future__ import division
 
 class MetaNameMixIn(object):
 
-  #def __init__(self, *args, **kwargs):
-  #  pass
-
   def getMetaName(self, meta, credDict):
     """
     Return a metadata name based on client supplied meta name and client credentials
