@@ -42,4 +42,5 @@ class RucioFileCatalogClient(FileCatalogClientBase):
   @checkCatalogArguments
   def isFile(self, lfns, timeout=120):
     """ Check whether the supplied lfns are files """
+    gLogger.debug("Rucio is file (lfns): ", lfns)
     return self._getRPC(timeout=timeout).isFile(lfns)
