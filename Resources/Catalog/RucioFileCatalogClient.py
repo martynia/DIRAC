@@ -38,3 +38,8 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     gLogger.debug("Rucio list directory for lfns: ", lfns)
     if verbose:
       pass
+
+  @checkCatalogArguments
+  def isFile(self, lfns, timeout=120):
+    """ Check whether the supplied lfns are files """
+    return self._getRPC(timeout=timeout).isFile(lfns)
