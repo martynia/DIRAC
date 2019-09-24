@@ -28,7 +28,9 @@ class RucioFileCatalogClient(FileCatalogClientBase):
 
   ADMIN_METHODS = FileCatalogClientBase.ADMIN_METHODS + ['getUserDirectory']
 
-  def __init__( self, **options ):
+  def __init__( self, url=None,  **options ):
+    self.serverURL = 'DataManagement/RucioFileCatalog' if not url else url
+    super(RucioFileCatalogClient, self).__init__(self.serverURL, **options)
     gLogger.debug("Rucio File Catalog client created with options: ", options)
 
   @checkCatalogArguments
