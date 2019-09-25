@@ -1,5 +1,6 @@
 """ ProxyManagementAPI has the functions to "talk" to the ProxyManagement service
 """
+import six
 import os
 import datetime
 
@@ -175,7 +176,7 @@ class ProxyManagerClient(object):
         proxyLocation = Locations.getProxyLocation()
         if not proxyLocation:
           return S_ERROR("Can't find a valid proxy")
-      elif isinstance(proxy, basestring):
+      elif isinstance(proxy, six.string_types):
         proxyLocation = proxy
       else:
         return S_ERROR("Can't find a valid proxy")
@@ -239,10 +240,10 @@ class ProxyManagerClient(object):
       rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
     if token:
       retVal = rpcClient.getProxyWithToken(userDN, userGroup, req.dumpRequest()['Value'],
-                                           long(cacheTime + requiredTimeLeft), token)
+                                           int(cacheTime + requiredTimeLeft), token)
     else:
       retVal = rpcClient.getProxy(userDN, userGroup, req.dumpRequest()['Value'],
-                                  long(cacheTime + requiredTimeLeft))
+                                  int(cacheTime + requiredTimeLeft))
     if not retVal['OK']:
       return retVal
     chain = X509Chain(keyObj=req.getPKey())
@@ -305,11 +306,11 @@ class ProxyManagerClient(object):
       rpcClient = RPCClient("Framework/ProxyManager", timeout=120)
     if token:
       retVal = rpcClient.getVOMSProxyWithToken(userDN, userGroup, req.dumpRequest()['Value'],
-                                               long(cacheTime + requiredTimeLeft), token, requiredVOMSAttribute)
+                                               int(cacheTime + requiredTimeLeft), token, requiredVOMSAttribute)
 
     else:
       retVal = rpcClient.getVOMSProxy(userDN, userGroup, req.dumpRequest()['Value'],
-                                      long(cacheTime + requiredTimeLeft), requiredVOMSAttribute)
+                                      int(cacheTime + requiredTimeLeft), requiredVOMSAttribute)
     if not retVal['OK']:
       return retVal
     chain = X509Chain(keyObj=req.getPKey())
