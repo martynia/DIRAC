@@ -11,9 +11,9 @@ from DIRAC.Resources.Catalog.Utilities import checkCatalogArguments
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername, getVOMSAttributeForGroup, \
   getVOForGroup, getVOOption
 #from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
-from DIRAC.Core.Base.Client import Client
+# no !from DIRAC.Core.Base.Client import Client
 
-class RucioFileCatalogClient(Client):
+class RucioFileCatalogClient(Object):
   """
 
   """
