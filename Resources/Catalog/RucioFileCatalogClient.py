@@ -13,7 +13,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername, 
 #from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
 # no !from DIRAC.Core.Base.Client import Client
 
-class RucioFileCatalogClient(Object):
+class RucioFileCatalogClient(object):
   """
 
   """
