@@ -10,10 +10,10 @@ from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.Catalog.Utilities import checkCatalogArguments
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername, getVOMSAttributeForGroup, \
   getVOForGroup, getVOOption
-from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
+#from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
+from DIRAC.Core.Base.Client import Client
 
-
-class RucioFileCatalogClient(FileCatalogClientBase):
+class RucioFileCatalogClient(Client):
   """
 
   """
