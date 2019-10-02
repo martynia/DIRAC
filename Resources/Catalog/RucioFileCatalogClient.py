@@ -38,9 +38,12 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     gLogger.debug("Rucio list directory for lfns: ", lfns)
     if verbose:
       pass
+    return S_OK({'Failed':[], 'Successful':[]})
 
   @checkCatalogArguments
-  def isFile(self, lfns, timeout=120):
+  def isFile(self, lfns, verbose=False):
     """ Check whether the supplied lfns are files """
     gLogger.debug("Rucio is file (lfns): ", lfns)
-    return self._getRPC(timeout=timeout).isFile(lfns)
+    if verbose:
+       pass
+    return S_OK({'Failed':[], 'Successful':[]})
