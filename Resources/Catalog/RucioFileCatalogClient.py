@@ -65,7 +65,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
       se = lfnInfo['SE']
       guid = lfnInfo['GUID']
       checksum = lfnInfo['Checksum']
-      scope = lfnInfo.split('/')[2]
+      scope = lfn.split('/')[2]
 
     return S_OK({'Failed':{}, 'Successful':{}})
 
@@ -81,4 +81,3 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     successful = dict( ( path, True ) for path in lfns )
 
     return S_OK( {'Successful': successful, 'Failed' : failed} )
-  
