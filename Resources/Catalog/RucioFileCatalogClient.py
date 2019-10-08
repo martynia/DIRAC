@@ -12,6 +12,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername, 
   getVOForGroup, getVOOption
 from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
 from DIRAC.Core.Base.Client import Client
+from rucio.client.replicaclient import ReplicaClient
 
 class RucioFileCatalogClient(FileCatalogClientBase):
   """
@@ -66,7 +67,12 @@ class RucioFileCatalogClient(FileCatalogClientBase):
       guid = lfnInfo['GUID']
       checksum = lfnInfo['Checksum']
       scope = lfn.split('/')[2]
-
+      client = ReplicaClient()
+      rse = 'IC_TEST1'
+      name = lfn
+      res = client.add_replica(rse, scope, name, size, checksum)
+      if res:
+        gLogger.debug(" Rucio replica %s registered successfully " % lfn)
     return S_OK({'Failed':{}, 'Successful':{}})
 
   @checkCatalogArguments
