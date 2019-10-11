@@ -12,6 +12,7 @@ from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getDNForUsername, 
   getVOForGroup, getVOOption
 from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
 from DIRAC.Core.Base.Client import Client
+from DIRAC.Resources.Catalog.LcgFileCatalogClient import getClientCertInfo
 from rucio.client.replicaclient import ReplicaClient
 
 class RucioFileCatalogClient(FileCatalogClientBase):
@@ -54,10 +55,11 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """
     Upload and register a local file with Rucio file catalog.
 
-    :param lfns:
+    :param lfns: a list containing logical filenames
     :return:
     """
     successful = {}
+    failed ={}
     gLogger.debug("Rucio addFile (lfns): ", lfns)
     for lfn  in lfns:
       lfnInfo = lfns[lfn]
@@ -66,13 +68,17 @@ class RucioFileCatalogClient(FileCatalogClientBase):
       se = lfnInfo['SE']
       guid = lfnInfo['GUID']
       checksum = lfnInfo['Checksum']
-      scope = lfn.split('/')[2]
+      parts = lfn.split('/')
+      scope = parts[2]
+      name = os.path.join('/',*parts[3:])
       client = ReplicaClient()
       rse = 'IC_TEST1'
-      name = lfn
       res = client.add_replica(rse, scope, name, size, checksum)
       if res:
-        gLogger.debug(" Rucio replica %s registered successfully " % lfn)
+        gLogger.debug(" Rucio replica %s registered successfully " % name)
+        successful[lfn] = True
+      else:
+        failed[lfn] = " Rucio replica %s registration failed " % name
     return S_OK({'Failed':{}, 'Successful':{}})
 
   @checkCatalogArguments
