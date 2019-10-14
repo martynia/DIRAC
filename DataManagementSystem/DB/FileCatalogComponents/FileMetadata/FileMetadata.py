@@ -110,10 +110,6 @@ class FileMetadata(MetaNameMixIn):
     :return: standard Dirac result object
     """
 
-
-    """ Get all the defined metadata fields
-    """
-
     req = "SELECT MetaName,MetaType FROM FC_FileMetaFields"
     result = self.db._query(req)
     if not result['OK']:
@@ -144,9 +140,7 @@ class FileMetadata(MetaNameMixIn):
     :param dict credDict: client credential dictionary
     :return: standard Dirac result object
     """
-    """ Set the value of a given metadata field for the the given directory path.
-        Modified to use fully qualified metadata name.
-    """
+
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
       return result
@@ -187,8 +181,6 @@ class FileMetadata(MetaNameMixIn):
     :return: standard Dirac result object
     """
 
-    """ Remove the specified metadata for the given file (for user's own VO only)
-    """
     # this would be fully qualified already
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
@@ -250,9 +242,6 @@ class FileMetadata(MetaNameMixIn):
     :return: standard Dirac result object
     """
 
-    """ Set an meta parameter - metadata which is not used in the the data
-        search operations. metaName is VO aware.
-    """
     result = self.db.insertFields('FC_FileMeta',
                                   ['FileID', 'MetaKey', 'MetaValue'],
                                   [fileID, self.getMetaName(metaName, credDict), str(metaValue)])
@@ -305,8 +294,7 @@ class FileMetadata(MetaNameMixIn):
     :param bool stripVO: If True, the VO suffix is stripped from metadata name
     :return: standard Dirac result object
     """
-    """ Get metadata for the given file
-    """
+
     # First file metadata
     result = self.getFileMetadataFields(credDict)
     if not result['OK']:
