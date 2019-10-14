@@ -490,11 +490,11 @@ class FileCatalogHandler(RequestHandler):
   def export_getMetadataFields(self):
     """ Get all the metadata fields.
     """
-    resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials(), enableStripping=True)
+    resultDir = gFileCatalogDB.dmeta.getMetadataFields(self.getRemoteCredentials(), stripVO=True)
     if not resultDir['OK']:
       return resultDir
 
-    resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials(), enableStripping=True)
+    resultFile = gFileCatalogDB.fmeta.getFileMetadataFields(self.getRemoteCredentials(), stripVO=True)
     if not resultFile['OK']:
       return resultFile
 
@@ -527,7 +527,7 @@ class FileCatalogHandler(RequestHandler):
   def export_getDirectoryUserMetadata(self, path):
     """ Get all the metadata valid for the given directory path.
     """
-    return gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), enableStripping=True)
+    return gFileCatalogDB.dmeta.getDirectoryMetadata(path, self.getRemoteCredentials(), stripVO=True)
     # code below breaks client-side checks
 
   types_getFileUserMetadata = [StringTypes]
@@ -535,7 +535,7 @@ class FileCatalogHandler(RequestHandler):
   def export_getFileUserMetadata(self, path):
     """ Get all the metadata valid for the given file.
     """
-    return gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials(), enableStripping=True)
+    return gFileCatalogDB.fmeta.getFileUserMetadata(path, self.getRemoteCredentials(), stripVO=True)
 
   types_findDirectoriesByMetadata = [DictType]
 

@@ -29,9 +29,13 @@ class FileMetadata(MetaNameMixIn):
   #
   ##############################################################################
   def addMetadataField(self, pname, ptype, credDict):
-    """ Add a new metadata parameter to the Metadata Database.
-        pname - parameter name, ptype - parameter type in the MySQL notation.
-        Modified to use fully qualified metadata names.
+    """
+    Add a new metadata parameter to the Metadata Database.
+
+    :param str pname: parameter name
+    :param str ptype: parameter type in the MySQL notation
+    :param dict credDict: client credential dictionary
+    :return: standard Dirac result object
     """
 
     if pname in FILE_STANDARD_METAKEYS:
@@ -75,7 +79,12 @@ class FileMetadata(MetaNameMixIn):
     return S_OK("Added new metadata: %d" % metadataID)
 
   def deleteMetadataField(self, pname, credDict):
-    """ Remove metadata field (only from user's own VO)
+    """
+    Remove metadata field (only from user's own VO)
+
+    :param str pname: parameter name
+    :param dict credDict: client credential dictionary
+    :return: standard Dirac result object
     """
 
     fqPname = self.getMetaName(pname, credDict)
@@ -91,7 +100,17 @@ class FileMetadata(MetaNameMixIn):
         result["Message"] = error + "; " + result["Message"]
     return result
 
-  def getFileMetadataFields(self, credDict, enableStripping=False):
+  def getFileMetadataFields(self, credDict, stripVO=False):
+    """
+    Get all the defined metadata fields.
+
+    :param dict credDict: client credential dictionary
+    :param bool stripVO: flag whether to return metadata name with
+     or without a VO suffix
+    :return: standard Dirac result object
+    """
+
+
     """ Get all the defined metadata fields
     """
 
@@ -105,7 +124,7 @@ class FileMetadata(MetaNameMixIn):
       metaDict[row[0]] = row[1]
 
     # strip the suffix, if required (for clients)
-    if enableStripping:
+    if stripVO:
       metaDict = self.stripSuffix(metaDict, credDict)
     return S_OK(metaDict)
 
@@ -116,6 +135,15 @@ class FileMetadata(MetaNameMixIn):
   ###########################################################
 
   def setMetadata(self, path, metadict, credDict):
+    """
+    Set the value of a given metadata field for the the given directory path.
+    Modified to use fully qualified metadata name.
+
+    :param str path: directory path
+    :param dict metadict: metadata dictionary {name:value}
+    :param dict credDict: client credential dictionary
+    :return: standard Dirac result object
+    """
     """ Set the value of a given metadata field for the the given directory path.
         Modified to use fully qualified metadata name.
     """
@@ -150,6 +178,15 @@ class FileMetadata(MetaNameMixIn):
     return S_OK()
 
   def removeMetadata(self, path, metadata, credDict):
+    """
+    Remove the specified metadata for the given file (for user's own VO only)
+
+    :param str path: file path
+    :param dict metadata: metadata dictionary
+    :param dict credDict: client credential dictionary
+    :return: standard Dirac result object
+    """
+
     """ Remove the specified metadata for the given file (for user's own VO only)
     """
     # this would be fully qualified already
@@ -202,6 +239,17 @@ class FileMetadata(MetaNameMixIn):
     return S_OK(fileID)
 
   def __setFileMetaParameter(self, fileID, metaName, metaValue, credDict):
+    """
+    Set an meta parameter - metadata which is not used in the the data
+    search operations. metaName is VO aware.
+
+    :param int fileID: file ID
+    :param str metaName: metadata name
+    :param metaValue: metadata value
+    :param credDict: client credential dictionary
+    :return: standard Dirac result object
+    """
+
     """ Set an meta parameter - metadata which is not used in the the data
         search operations. metaName is VO aware.
     """
@@ -248,7 +296,15 @@ class FileMetadata(MetaNameMixIn):
 
     return S_OK(metaDict)
 
-  def getFileUserMetadata(self, path, credDict, enableStripping=False):
+  def getFileUserMetadata(self, path, credDict, stripVO=False):
+    """
+    Get metadata for the given file.
+
+    :param str path:  file path
+    :param dict credDict: client credential dictionary
+    :param bool stripVO:
+    :return: standard Dirac result object
+    """
     """ Get metadata for the given file
     """
     # First file metadata
@@ -279,7 +335,7 @@ class FileMetadata(MetaNameMixIn):
       for meta in result['Value']:
         metaTypeDict[meta] = 'NonSearchable'
 
-    if enableStripping:
+    if stripVO:
       metaDict = self.stripSuffix(metaDict, credDict)
 
     result = S_OK(metaDict)

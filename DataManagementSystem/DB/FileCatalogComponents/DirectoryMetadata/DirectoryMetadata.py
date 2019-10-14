@@ -28,10 +28,16 @@ class DirectoryMetadata(MetaNameMixIn):
 #
 
   def addMetadataField(self, pname, ptype, credDict):
-    """ Add a new metadata parameter to the Metadata Database.
-        pname - parameter name, ptype - parameter type in the MySQL notation
-        Modified to use fully qualified metadata names.
     """
+    Add a new metadata parameter to the Metadata Database.
+    Modified to use fully qualified metadata names.
+
+    :param str pname: parameter name
+    :param str ptype: parameter type in the MySQL notation
+    :param dict credDict: client credential dictionary
+    :return: standard Dirac result object
+    """
+
     # existing pnames are fully qualified, so
     fqPname = self.getMetaName(pname, credDict)
     result = self.db.fmeta.getFileMetadataFields(credDict)
@@ -96,7 +102,7 @@ class DirectoryMetadata(MetaNameMixIn):
         result["Message"] = error + "; " + result["Message"]
     return result
 
-  def getMetadataFields(self, credDict, enableStripping=False):
+  def getMetadataFields(self, credDict, stripVO=False):
     """ Get all the defined metadata fields
     """
 
@@ -109,7 +115,7 @@ class DirectoryMetadata(MetaNameMixIn):
     for row in result['Value']:
       metaDict[row[0]] = row[1]
     # strip the VO suffix, if required
-    if enableStripping:
+    if stripVO:
       metaDict = self.stripSuffix(metaDict, credDict)
 
     return S_OK(metaDict)
@@ -221,8 +227,15 @@ class DirectoryMetadata(MetaNameMixIn):
     return S_OK()
 
   def removeMetadata(self, dpath, metadata, credDict):
-    """ Remove the specified metadata for the given directory for users own VO
     """
+    Remove the specified metadata for the given directory for users own VO.
+
+    :param str dpath: directory path
+    :param dict metadata: metadata dictionary
+    :param dict credDict: client credential dictionary
+    :return: standard Dirac result object
+    """
+
     result = self.getMetadataFields(credDict)
     if not result['OK']:
       return result
@@ -260,6 +273,18 @@ class DirectoryMetadata(MetaNameMixIn):
       return S_OK()
 
   def setMetaParameter(self, dpath, metaName, metaValue, credDict):
+    """
+    Set an meta parameter - metadata which is not used in the the data
+    search operations.
+
+    :param str dpath: directory path
+    :param str metaName: metadata name
+    :param str metaValue: metadata value
+    :param credDict: client credential dictionary
+    :return: standard Dirac result object
+    """
+
+
     """ Set an meta parameter - metadata which is not used in the the data
         search operations.
     """
@@ -315,11 +340,19 @@ class DirectoryMetadata(MetaNameMixIn):
 
     return S_OK(metaDict)
 
-  def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True, enableStripping=False):
-    """ Get metadata for the given directory aggregating metadata for the directory itself
-        and for all the parent directories if inherited flag is True. Get also the non-indexed
-        metadata parameters. If the method is used in a call chain which supplies data back to
-        the client enableStripping should  be set to True, otherwise the default should be used.
+  def getDirectoryMetadata(self, path, credDict, inherited=True, owndata=True, stripVO=False):
+    """
+    Get metadata for the given directory aggregating metadata for the directory itself
+    and for all the parent directories if inherited flag is True. Get also the non-indexed
+    metadata parameters. If the method is used in a call chain which supplies data back to
+    the client stripVO should  be set to True, otherwise the default should be used.
+
+    :param str path: directory path
+    :param dict credDict: client credential dictionary
+    :param bool inherited: iclude parent directories if True
+    :param bool owndata:
+    :param bool stripVO: if set to True, the VO suffix is stripped.
+    :return: standard Dirac result object
     """
 
     result = self.db.dtree.getPathIDs(path)
@@ -364,7 +397,7 @@ class DirectoryMetadata(MetaNameMixIn):
       for meta in result['Value']:
         metaOwnerDict[meta] = 'OwnParameter'
 
-    if enableStripping:
+    if stripVO:
       metaDict = self.stripSuffix(metaDict, credDict)
       metaOwnerDict = self.stripSuffix(metaOwnerDict, credDict)
       metaTypeDict = self.stripSuffix(metaTypeDict, credDict)
