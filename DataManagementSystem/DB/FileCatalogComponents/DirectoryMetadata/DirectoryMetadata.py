@@ -284,10 +284,6 @@ class DirectoryMetadata(MetaNameMixIn):
     :return: standard Dirac result object
     """
 
-
-    """ Set an meta parameter - metadata which is not used in the the data
-        search operations.
-    """
     result = self.db.dtree.findDir(dpath)
     if not result['OK']:
       return result
