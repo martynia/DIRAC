@@ -280,7 +280,7 @@ class DirectoryMetadata(MetaNameMixIn):
     :param str dpath: directory path
     :param str metaName: metadata name
     :param str metaValue: metadata value
-    :param credDict: client credential dictionary
+    :param dict credDict: client credential dictionary
     :return: standard Dirac result object
     """
 
