@@ -238,7 +238,7 @@ class FileMetadata(MetaNameMixIn):
     :param int fileID: file ID
     :param str metaName: metadata name
     :param metaValue: metadata value
-    :param credDict: client credential dictionary
+    :param dict credDict: client credential dictionary
     :return: standard Dirac result object
     """
 
