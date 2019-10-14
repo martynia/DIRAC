@@ -302,7 +302,7 @@ class FileMetadata(MetaNameMixIn):
 
     :param str path:  file path
     :param dict credDict: client credential dictionary
-    :param bool stripVO:
+    :param bool stripVO: If True, the VO suffix is stripped from metadata name
     :return: standard Dirac result object
     """
     """ Get metadata for the given file
