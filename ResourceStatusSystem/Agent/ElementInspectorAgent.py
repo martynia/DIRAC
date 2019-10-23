@@ -180,7 +180,7 @@ class ElementInspectorAgent(AgentModule):
 
       lowerElementDict = {'element': self.elementType}
       for key, value in elemDict.iteritems():
-        if len(key) > 2:
+        if len(key) >= 2:  # VO !
           lowerElementDict[key[0].lower() + key[1:]] = value
 
       # We add lowerElementDict to the queue
@@ -209,7 +209,8 @@ class ElementInspectorAgent(AgentModule):
       except Queue.Empty:
         return S_OK()
 
-      self.log.verbose('%s ( %s / %s ) being processed' % (element['name'],
+      self.log.verbose('%s ( vO=%s / status=%s / statusType=%s ) being processed' % (element['name'],
+                                                           element['vO'],
                                                            element['status'],
                                                            element['statusType']))
 

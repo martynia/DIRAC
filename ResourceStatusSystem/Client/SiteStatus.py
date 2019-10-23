@@ -62,7 +62,7 @@ class SiteStatus(object):
         It will try 5 times to contact the RSS before giving up
     """
 
-    meta = {'columns': ['Name', 'Status']}
+    meta = {'columns': ['Name', 'Status', 'VO']}
 
     for ti in xrange(5):
       rawCache = self.rsClient.selectStatusElement('Site', 'Status', meta=meta)
@@ -146,7 +146,7 @@ class SiteStatus(object):
     :return: dict
     """
 
-    cacheMatch = self.rssCache.match(siteName, '', '')
+    cacheMatch = self.rssCache.match(siteName, '', '', 'all')  # sites have VO="all".
 
     self.log.debug('__getRSSSiteStatus')
     self.log.debug(cacheMatch)
