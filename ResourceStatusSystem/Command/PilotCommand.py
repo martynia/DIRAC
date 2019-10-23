@@ -72,6 +72,7 @@ class PilotCommand(Command):
 
   def doNew(self, masterParams=None):
 
+    self.log.debug('PilotCommand doNew')
     if masterParams is not None:
       element, name = masterParams
     else:
@@ -127,6 +128,7 @@ class PilotCommand(Command):
 
   def doCache(self):
 
+    self.log.debug('PilotCommand doCache')
     params = self._prepareCommand()
     if not params['OK']:
       return params
@@ -149,6 +151,7 @@ class PilotCommand(Command):
 
   def doMaster(self):
 
+    self.log.debug('PilotCommand doMaster')
     siteNames = getSites()
     if not siteNames['OK']:
       return siteNames
