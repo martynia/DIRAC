@@ -49,7 +49,7 @@ class CacheFeederAgent(AgentModule):
     """ Define the commands to be executed, and instantiate the clients that will be used.
     """
 
-    self.am_setOption('shifterProxy', 'DataManager')
+    #self.am_setOption('shifterProxy', 'DataManager')
 
     self.rmClient = ResourceManagementClient()
 
