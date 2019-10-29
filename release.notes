@@ -1,3 +1,29 @@
+[v6r22p13]
+
+*Resources
+FIX: (#4299) CREAMComputingElement - possibility to defined CEQueueName to be used in the pilot submission command
+CHANGE: (#4297) SingularityCE: Delete workDir at end of job by default.
+FIX: (#4297) SingularityCE: Always stop proxy renewal thread at end of job.
+
+*TS
+NEW: (#4301) DataRecoveryAgent to perform and apply consistency checks for transformations
+NEW: (#4301) dirac-transformation-recover-data : script to manually run consistency checks on 
+     individual transformations, for debugging and testing of the DataRecoveryAgent
+
+[v6r22p12]
+
+FIX: fixes from v6r21p16
+
+[v6r22p11]
+
+*Interfaces
+FIX: (#4277) Dirac.py - fix error handling in getJobParameters()
+
+[v6r22p10]
+
+*Resources
+FIX: (#4271) StorageElement - loadObject of occupancyPlugin is called with the path to OccupancyPlugins
+
 [v6r22p9]
 
 *Core
@@ -143,6 +169,14 @@ CHANGE: (#4119) added note on MultiProcessor jobs preparation
 FIX: (#4119) Not lhcb but dteam (for DIRAC certification)
 FIX: (#4139) client_dms.sh not lhcb specific
 CHANGE:(#4140) adapt transformation certification tests to dteam VO
+
+[v6r21p16]
+
+*Resources
+FIX: (#4292) SSHComputingElement - define X509_USER_PROXY in case of gsissh access
+
+*WMS
+FIX: (#4292) SiteDirector - do not use keyword arguments when making setPilotStatus call
 
 [v6r21p15]
 
