@@ -49,8 +49,6 @@ class CacheFeederAgent(AgentModule):
     """ Define the commands to be executed, and instantiate the clients that will be used.
     """
 
-    #self.am_setOption('shifterProxy', 'DataManager')
-
     self.rmClient = ResourceManagementClient()
 
     self.commands['Downtime'] = [{'Downtime': {}}]
