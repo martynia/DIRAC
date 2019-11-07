@@ -6,8 +6,8 @@
 
   if the denominator is smaller than 10, it does not take any decision.
 """
-from future import division
-from DIRAC import S_OK
+from __future__ import division
+from DIRAC                                              import S_OK
 from DIRAC.ResourceStatusSystem.PolicySystem.PolicyBase import PolicyBase
 
 __RCSID__ = '$Id$'
