@@ -26,6 +26,7 @@ class PilotEfficiencyPolicy(PolicyBase):
 
     """
 
+    minTotal = 10
     result = {
         'Status': None,
         'Reason': None
@@ -58,11 +59,11 @@ class PilotEfficiencyPolicy(PolicyBase):
     # total     = aborted + deleted + done + failed
     total = aborted + done + failed
 
-    # we want a minimum amount of pilots to take a decision ( at least 10 pilots )
-    if total < 10:
-      result['Status'] = 'Unknown'
-      result['Reason'] = 'Not enough pilots to take a decision'
-      return S_OK(result)
+    #we want a minimum amount of pilots to take a decision ( at least 10 pilots )
+    if total < minTotal:
+      result[ 'Status' ] = 'Unknown'
+      result[ 'Reason' ] = 'Not enough pilots %d to take a decision (<%d)' % (total, minTotal)
+      return S_OK( result )
 
     efficiency = done / total
 
