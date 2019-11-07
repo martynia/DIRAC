@@ -52,6 +52,15 @@ class PilotEfficiencyPolicy( PolicyBase ):
       result[ 'Reason' ] = 'No values to take a decision'
       return S_OK( result )
 
+    # Pilot efficiency is now available directly from the command result:
+    efficiency = commandResult.get('PilotJobEff', None)
+
+    if efficiency is None:
+      result[ 'Status' ] = 'Unknown'
+      result[ 'Reason' ] = 'Pilot efficiency value is not present in the result obtained'
+      return S_OK(result)
+
+    """
     aborted = commandResult.get('Aborted', 0)
     #deleted = float( commandResult[ 'Deleted' ] )
     done    = commandResult.get('Done', 0)
@@ -63,11 +72,11 @@ class PilotEfficiencyPolicy( PolicyBase ):
     #we want a minimum amount of pilots to take a decision ( at least 10 pilots )
     if total < minTotal:
       result[ 'Status' ] = 'Unknown'
-      result[ 'Reason' ] = 'Not enough pilots %d to take a decision (<%d)' % (total, minTotal)
+      result[ 'Reason' ] = 'Not enough pilots (%d) to take a decision (<%d)' % (total, minTotal)
       return S_OK( result )
 
     efficiency = done / total
-
+    """
     if efficiency <= 0.5:
       result[ 'Status' ] = 'Banned'
     elif efficiency <= 0.9:
