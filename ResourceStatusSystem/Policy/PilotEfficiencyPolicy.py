@@ -8,6 +8,7 @@
   if the denominator is smaller than 10, it does not take any decision.
 """
 
+from future import division
 from DIRAC                                              import S_OK
 from DIRAC.ResourceStatusSystem.PolicySystem.PolicyBase import PolicyBase
 
@@ -50,10 +51,10 @@ class PilotEfficiencyPolicy( PolicyBase ):
       result[ 'Reason' ] = 'No values to take a decision'
       return S_OK( result )
 
-    aborted = float( commandResult[ 'Aborted' ] )
+    aborted = commandResult.get('Aborted', 0)
     #deleted = float( commandResult[ 'Deleted' ] )
-    done    = float( commandResult[ 'Done' ] )
-    failed  = float( commandResult[ 'Failed' ] )
+    done    = commandResult.get('Done', 0)
+    failed  = commandResult.get('Failed', 0)
 
     #total     = aborted + deleted + done + failed
     total     = aborted + done + failed
