@@ -51,7 +51,7 @@ class PilotEfficiencyPolicy(PolicyBase):
       result['Reason'] = 'No values to take a decision'
       return S_OK(result)
 
-    # Pilot efficiency is now available directly from the command result:
+    # Pilot efficiency is now available directly from the command result, in percent:
     efficiency = commandResult.get('PilotJobEff', None)
 
     if efficiency is None:
@@ -76,10 +76,11 @@ class PilotEfficiencyPolicy(PolicyBase):
 
     efficiency = done / total
     """
-    if efficiency <= 0.5:
-      result['Status'] = 'Banned'
-    elif efficiency <= 0.9:
-      result['Status'] = 'Degraded'
+
+    if efficiency <= 50.0:
+      result[ 'Status' ] = 'Banned'
+    elif efficiency <= 90.0:
+      result[ 'Status' ] = 'Degraded'
     else:
       result['Status'] = 'Active'
 
