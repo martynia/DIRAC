@@ -93,6 +93,11 @@ class PilotCommand(Command):
 
     pilotsResults = self.pilots.getPilotSummaryWeb(wmsDict, [], 0, 0)
 
+    import pprint
+    print "PilotCommand -> Pilots results: "
+    pp = pprint.PrettyPrinter(indent=4)
+    pp.pprint(pilotsResults)
+
     if not pilotsResults['OK']:
       return pilotsResults
     pilotsResults = pilotsResults['Value']
