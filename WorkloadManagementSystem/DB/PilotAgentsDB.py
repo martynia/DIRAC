@@ -28,7 +28,7 @@ import DIRAC.Core.Utilities.Time as Time
 from DIRAC.ConfigurationSystem.Client.Helpers.Resources import getCESiteMapping
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getDNForUsername
 from DIRAC.ResourceStatusSystem.Client.SiteStatus import SiteStatus
-from DIRAC.WorkLoadManagementSystem.DB.PivotedPilotSummaryTable import PivotedPilotSummaryTable
+from DIRAC.WorkloadManagementSystem.DB.PivotedPilotSummaryTable import PivotedPilotSummaryTable
 
 
 class PilotAgentsDB(DB):
