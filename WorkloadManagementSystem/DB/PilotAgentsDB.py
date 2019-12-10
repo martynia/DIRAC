@@ -27,6 +27,7 @@ from DIRAC.Core.Utilities.SiteCEMapping import getSiteForCE, getCESiteMapping
 import DIRAC.Core.Utilities.Time as Time
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getUsernameForDN, getDNForUsername
 from DIRAC.ResourceStatusSystem.Client.SiteStatus import SiteStatus
+from DIRAC.WorkLoadManagementSystem.DB.PivotedPilotSummaryTable import PivotedPilotSummaryTable
 
 
 class PilotAgentsDB(DB):
@@ -633,6 +634,27 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
 #     return S_OK( result )
 
 ##########################################################################################
+  def getGrouppedPilotSummary(self, selectDict, columnList = None):
+    """
+    The simplified pilot summary based on getPilotSummaryWeb method. It calculates pilot efficiency
+    based on the same algorithm as in the Web version, basically takes into account Done and
+    Aborted pilots only from the last day. The selection is done entirely in SQL.
+
+    :param selectDict: a dictionary to select between sites and resources ('expanded sites').
+                       Also allows to define start time for Done and Aborted Pilots.
+    :param columnList  a list of column to consider when groupping to calculate efficiencies.
+                       ['GridSite', 'DestinationSite'] is the default to calculate efficiences
+                       for sites. For CEs it would be ['GridSite', 'DestinationSite', 'DestinationSite']
+                       add 'OwnerGroup' to the above lists to get efficiences by group.
+    :return: a dict containing the ParameterNames and Records lists.
+    """
+
+    table =  PivotedPilotSummaryTable()
+    sqlQuery = table.buildSQL()
+
+    return table.query(self, sqlQuery)
+
+
   def getPilotSummaryWeb(self, selectDict, sortList, startItem, maxItems):
     """ Get summary of the pilot jobs status by CE/site in a standard structure
     """

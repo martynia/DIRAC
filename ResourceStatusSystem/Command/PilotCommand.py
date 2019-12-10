@@ -92,11 +92,15 @@ class PilotCommand(Command):
       return S_ERROR('"%s" is not  Site nor Resource' % element)
 
     pilotsResults = self.pilots.getPilotSummaryWeb(wmsDict, [], 0, 0)
+    pilotsResultPivot = self.pilots.getGrouppedPilotSummary()
 
     import pprint
     print "PilotCommand -> Pilots results: "
     pp = pprint.PrettyPrinter(indent=4)
     pp.pprint(pilotsResults)
+
+    print('---------------- from pivoted table ---------------')
+    pp.pprint(pilotsResultPivot)
 
     if not pilotsResults['OK']:
       return pilotsResults
