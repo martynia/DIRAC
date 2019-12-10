@@ -121,30 +121,3 @@ class PivotedPilotSummaryTable(DB):
 
     result['Records': rows]
     return S_OK(result)
-
-"""
-def _quotedList(fieldList=None):
-  """
-    Quote a list of MySQL Field Names with "`"
-    Return a comma separated list of quoted Field Names
-
-    To be use for Table and Field Names
-  """
-  if fieldList is None:
-    return None
-  quotedFields = []
-  try:
-    for field in fieldList:
-      quotedFields.append('`%s`' % field.replace('`', ''))
-  except Exception:
-    return None
-  if not quotedFields:
-    return None
-
-  return ', '.join(quotedFields)
-
-
-obj = PivotedPilotSummaryTable()
-print (obj.buildSQL(None))
-
-"""
