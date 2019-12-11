@@ -3,7 +3,7 @@ from DIRAC.Core.Base.DB import DB
 import DIRAC.Core.Utilities.Time as Time
 from DIRAC.Core.Utilities.MySQL import _quotedList
 
-class PivotedPilotSummaryTable(DB):
+class PivotedPilotSummaryTable:
   """
     SELECT Pivoted_eff.GridSite, Pivoted_eff.DestinationSite, Pivoted_eff.Done_Empties,
            Pivoted_eff.Submitted, Pivoted_eff.Done, Pivoted_eff.Failed, Pivoted_eff.Aborted, 
@@ -106,16 +106,3 @@ class PivotedPilotSummaryTable(DB):
     finalQuery = pivoted_eff + eff_case + pivotedQuery + innerGroupBy + outerGroupBy
     self.columns += self.columns+[' Total', 'PilotsPerJob', 'Eff']
     return finalQuery
-
-  def query(self, cmd):
-    res = self._query(cmd)
-    if not res['OK']:
-      return res
-# TODO add site or CE status, while looping
-    rows = []
-    result = {'ParameterNames': self.columnList}
-    for row in res['Value']:
-      rows.append(row)
-
-    result['Records': rows]
-    return S_OK(result)

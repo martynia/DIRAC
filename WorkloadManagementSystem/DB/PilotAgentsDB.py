@@ -651,8 +651,18 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
     table =  PivotedPilotSummaryTable(columnList)
     sqlQuery = table.buildSQL()
 
-    return table.query(sqlQuery)
+    res = self._query(sqlQuery)
+    if not res['OK']:
+      return res
+    # TODO add site or CE status, while looping
+    rows = []
+    result = {'ParameterNames': columnList}
+    for row in res['Value']:
+      rows.append(row)
 
+    result['Records'] = rows
+
+    return S_OK(result)
 
   def getPilotSummaryWeb(self, selectDict, sortList, startItem, maxItems):
     """ Get summary of the pilot jobs status by CE/site in a standard structure
