@@ -633,14 +633,14 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
 #     return S_OK( result )
 
 ##########################################################################################
-  def getGrouppedPilotSummary(self, selectDict, columnList = None):
+  def getGroupedPilotSummary(self, selectDict, columnList):
     """
     The simplified pilot summary based on getPilotSummaryWeb method. It calculates pilot efficiency
     based on the same algorithm as in the Web version, basically takes into account Done and
     Aborted pilots only from the last day. The selection is done entirely in SQL.
 
-    :param selectDict: a dictionary to select between sites and resources ('expanded sites').
-                       Also allows to define start time for Done and Aborted Pilots.
+    :param selectDict: A dictionary to pass additional conditions to select statements, i.e.
+                       it allows to define start time for Done and Aborted Pilots.
     :param columnList  a list of column to consider when groupping to calculate efficiencies.
                        ['GridSite', 'DestinationSite'] is the default to calculate efficiences
                        for sites. For CEs it would be ['GridSite', 'DestinationSite', 'DestinationSite']
@@ -648,7 +648,7 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
     :return: a dict containing the ParameterNames and Records lists.
     """
 
-    table =  PivotedPilotSummaryTable()
+    table =  PivotedPilotSummaryTable(columnList)
     sqlQuery = table.buildSQL()
 
     return table.query(self, sqlQuery)

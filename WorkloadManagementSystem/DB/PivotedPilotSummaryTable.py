@@ -37,17 +37,15 @@ class PivotedPilotSummaryTable(DB):
     AS Pivoted_eff;
   """
 
-  def __init__(self, columnList=None):
+  def __init__(self, columnList):
     """
-    Initialise a table with columns to be groupped by.
+    Initialise a table with columns to be grouped by.
 
-    :param columnList:
+    :param columnList: i.e. ['GridSite', 'DestinationSite']
     :return:
     """
 
     self.columnList = columnList
-    if self.columnList is None:
-      self.columnList = ['GridSite', 'DestinationSite']
 
     self.pstates = ['Submitted', 'Done', 'Failed', 'Aborted',
                     'Running', 'Waiting', 'Scheduled', 'Ready']
