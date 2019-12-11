@@ -195,10 +195,10 @@ class PilotManagerHandler(RequestHandler):
     return result
 
   ##############################################################################
-  types_getGrouppedPilotSummary = [dict, list]
+  types_getGroupedPilotSummary = [dict, list]
 
   @classmethod
-  def export_getGrouppedPilotSummary(cls, selectDict, columnList):
+  def export_getGroupedPilotSummary(cls, selectDict, columnList):
     result = pilotDB.getGrouppedPilotSummary(selectDict, columnList)
     return result
 
