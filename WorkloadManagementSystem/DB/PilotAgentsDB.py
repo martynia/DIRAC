@@ -651,9 +651,9 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
 
     table =  PivotedPilotSummaryTable(columnList)
     sqlQuery = table.buildSQL()
-    self.logger("SQL query : ")
-    self.logger(sqlQuery)
-    
+    self.logger.debug("SQL query : ")
+    self.logger.debug(sqlQuery)
+
     res = self._query(sqlQuery)
     if not res['OK']:
       return res
