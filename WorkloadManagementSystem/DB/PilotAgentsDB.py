@@ -651,7 +651,7 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
     table =  PivotedPilotSummaryTable(columnList)
     sqlQuery = table.buildSQL()
 
-    return table.query(self, sqlQuery)
+    return table.query(sqlQuery)
 
 
   def getPilotSummaryWeb(self, selectDict, sortList, startItem, maxItems):
