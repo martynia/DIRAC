@@ -50,7 +50,7 @@ class PivotedPilotSummaryTable:
     self.pstates = ['Submitted', 'Done', 'Failed', 'Aborted',
                     'Running', 'Waiting', 'Scheduled', 'Ready']
 
-    self.columns = self.columnList + self.pstates # MySQL._query does not give us column names, sadly.
+    self.columns = self.columnList + self.pstates # MySQL._query() does not give us column names, sadly.
 
   def buildSQL(self, selectDict = None):
     """
@@ -63,6 +63,7 @@ class PivotedPilotSummaryTable:
     """
 
     last_update = Time.dateTime() - Time.day
+    last_update = '2019-12-09 17:44:35.172266'
     # TODO
     # cond = buildCondition(...)
     pvtable = 'pivoted'
@@ -83,7 +84,7 @@ class PivotedPilotSummaryTable:
     # pivotedQuery = "SELECT %s,\n" % _quotedList([pvtable + '.' + item for item in self.columnList])
     # FIXME backqouting does not work with a prefix. Investigate.
     pivotedQuery = "SELECT %s,\n" % ', '.join([pvtable + '.' + item for item in self.columnList])
-    line_template = "  SUM(if (pivoted.Status={state!r}, pivoted.qty, 0)) AS {state}"
+    line_template = " SUM(if (pivoted.Status={state!r}, pivoted.qty, 0)) AS {state}"
     pivotedQuery += ',\n'.join(line_template.format(state=state) for state in self.pstates)
     pivotedQuery += ",\n  SUM(if (%s.Status='Done', %s.Empties,0)) AS Done_Empty,\n" \
                     "  SUM(%s.qty) AS Total " \
@@ -98,11 +99,15 @@ class PivotedPilotSummaryTable:
                "  WHEN pivoted_eff.Done=pivoted_eff.Done_Empty \n" \
                "  THEN 99.0 ELSE 0.0 END) AS PilotsPerJob,\n" \
                " (pivoted_eff.Total - pivoted_eff.Aborted)/pivoted_eff.Total*100.0 AS Eff \nFROM \n("
-    eff_select_template = " pivoted_eff.{state}"
+    eff_select_template = " CAST(pivoted_eff.{state} AS UNSIGNED) "
     # now select the columns + the states:
-    pivoted_eff = "SELECT %s,\n" % ', '.join(['pivoted_eff' + '.' + item for item in self.columnList]) + \
+    pivoted_eff = "SELECT %s,\n" % ', '.join(['pivoted_eff' + '.' + item  for item in self.columnList]) + \
                   ', '.join(eff_select_template.format(state=state) for state in self.pstates + ['Total']) + ", \n"
 
     finalQuery = pivoted_eff + eff_case + pivotedQuery + innerGroupBy + outerGroupBy
-    self.columns += self.columns+[' Total', 'PilotsPerJob', 'Eff']
+    self.columns += [' Total', 'PilotsPerJob', 'Eff']
     return finalQuery
+
+  def getColumnList(self):
+
+    return self.columns

@@ -21,6 +21,7 @@ __RCSID__ = "$Id$"
 
 import six
 import threading
+import decimal
 
 from DIRAC import S_OK, S_ERROR
 from DIRAC.Core.Base.DB import DB
@@ -650,17 +651,24 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
 
     table =  PivotedPilotSummaryTable(columnList)
     sqlQuery = table.buildSQL()
-    self.logger.debug("SQL query : ")
-    self.logger.debug(sqlQuery)
+
+    self.logger.info("SQL query : ")
+    self.logger.info("\n"+sqlQuery)
 
     res = self._query(sqlQuery)
     if not res['OK']:
       return res
+    
+    self.logger.info(res)
     # TODO add site or CE status, while looping
     rows = []
-    result = {'ParameterNames': columnList}
+    result = {'ParameterNames': table.getColumnList()}
     for row in res['Value']:
-      rows.append(row)
+      lrow =list(row)
+      for index, value in enumerate(row):
+        if type(value) == decimal.Decimal:
+          lrow[index]  = float(value)
+      rows.append(tuple(lrow))
 
     result['Records'] = rows
 
