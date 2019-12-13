@@ -46,26 +46,27 @@ class PivotedPilotSummaryTable:
     """
 
     self.columnList = columnList
-
     self.pstates = ['Submitted', 'Done', 'Failed', 'Aborted',
                     'Running', 'Waiting', 'Scheduled', 'Ready']
 
-    self.columns = self.columnList + self.pstates # MySQL._query() does not give us column names, sadly.
+    #we want 'Site' and 'CE' in the final result
+    colMap = {'GridSite': 'Site', 'DestinationSite': 'CE'}
+    self.columns = [colMap.get(val, val) for val in columnList]
+
+    self.columns += self.pstates # MySQL._query() does not give us column names, sadly.
 
   def buildSQL(self, selectDict = None):
     """
     Build an SQL query to create a table with all status counts in one row, ("pivoted")
     grouped by columns in the column list.
-    The default list is ['GridSite', 'DestinationSite']
 
     :param selectDict:
     :return: SQL query
     """
 
     last_update = Time.dateTime() - Time.day
-    last_update = '2019-12-09 17:44:35.172266'
-    # TODO
-    # cond = buildCondition(...)
+    #last_update = '2019-12-09 17:44:35.172266'
+
     pvtable = 'pivoted'
     innerGroupBy = "(SELECT %s, Status,\n " \
                    "count(CASE WHEN CurrentJobID=0  THEN 1 END) AS Empties," \
@@ -79,9 +80,6 @@ class PivotedPilotSummaryTable:
 
     # pivoted table: combine records with the same group of self.columnList into a single row.
 
-
-    # print _quotedList(pstates)
-    # pivotedQuery = "SELECT %s,\n" % _quotedList([pvtable + '.' + item for item in self.columnList])
     # FIXME backqouting does not work with a prefix. Investigate.
     pivotedQuery = "SELECT %s,\n" % ', '.join([pvtable + '.' + item for item in self.columnList])
     line_template = " SUM(if (pivoted.Status={state!r}, pivoted.qty, 0)) AS {state}"
