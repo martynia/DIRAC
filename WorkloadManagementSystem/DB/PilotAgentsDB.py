@@ -643,10 +643,10 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
 
     :param selectDict: A dictionary to pass additional conditions to select statements, i.e.
                        it allows to define start time for Done and Aborted Pilots.
-    :param columnList  a list of column to consider when groupping to calculate efficiencies.
-                       ['GridSite', 'DestinationSite'] is the default to calculate efficiences
-                       for sites. For CEs it would be ['GridSite', 'DestinationSite', 'DestinationSite']
-                       add 'OwnerGroup' to the above lists to get efficiences by group.
+    :param columnList  a list of column to consider when grouping to calculate efficiencies.
+                       e.g. ['GridSite', 'DestinationSite'] is used to calculate efficiences
+                       for sites and  CEs. If we want to add an OwnerGroup it would be:
+                       ['GridSite', 'DestinationSite', 'OwnerGroup'].
     :return: a dict containing the ParameterNames and Records lists.
     """
 
@@ -663,13 +663,24 @@ AND SubmissionTime < DATE_SUB(UTC_TIMESTAMP(),INTERVAL %d DAY)" %
     self.logger.info(res)
     # TODO add site or CE status, while looping
     rows = []
-    result = {'ParameterNames': table.getColumnList()}
+    columns = table.getColumnList()
+    result = {'ParameterNames': columns}
+    multiple = False
+    # If not grouped by CE:
+    if 'CE' not in columns:
+      multiple = True
+
     for row in res['Value']:
       lrow =list(row)
+      if multiple:
+        lrow.append('Multiple')
       for index, value in enumerate(row):
         if type(value) == decimal.Decimal:
           lrow[index]  = float(value)
       rows.append(tuple(lrow))
+# If not grouped by CE and more then 1 CE in the result:
+    if multiple:
+      columns.append('CE') # 'DestinationSite' re-mapped to 'CE' already
 
     result['Records'] = rows
 
