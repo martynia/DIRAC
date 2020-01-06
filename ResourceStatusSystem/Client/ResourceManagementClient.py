@@ -421,7 +421,7 @@ class ResourceManagementClient(Client):
 
     return self._getRPC().delete('PilotCache', self._prepare(locals()))
 
-  def addOrModifyPilotCache(self, site=None, cE=None, pilotsPerJob=None,
+  def addOrModifyPilotCache(self, site=None, cE=None, ownerGroup=None, pilotsPerJob=None,
                             pilotJobEff=None, status=None, lastCheckTime=None):
     '''
     Adds or updates-if-duplicated to PilotCache. Using `site` and `cE`
