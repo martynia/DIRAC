@@ -42,6 +42,7 @@ class PilotCommand(Command):
 
       resQuery = self.rmClient.addOrModifyPilotCache(pilotDict['Site'],
                                                      pilotDict['CE'],
+                                                     pilotDict.get('OwnerGroup', None),
                                                      pilotDict['PilotsPerJob'],
                                                      pilotDict['PilotJobEff'],
                                                      pilotDict['Status'])
@@ -93,9 +94,9 @@ class PilotCommand(Command):
     pilotsResults = self.pilots.getPilotSummaryWeb(wmsDict, [], 0, 0)
 
     if element == 'Resource':
-      pilotsResultPivot = self.pilots.getGroupedPilotSummary({}, ['GridSite', 'DestinationSite'])
+      pilotsResultPivot = self.pilots.getGroupedPilotSummary({}, ['GridSite', 'DestinationSite', 'OwnerGroup'])
     elif element == 'Site':
-      pilotsResultPivot = self.pilots.getGroupedPilotSummary({}, ['GridSite'])
+      pilotsResultPivot = self.pilots.getGroupedPilotSummary({}, ['GridSite', 'OwnerGroup'])
     else:
       # You should never see this error
       return S_ERROR('"%s" is not  Site nor Resource' % element)
