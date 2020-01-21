@@ -73,7 +73,7 @@ class LogStatusAction(BaseAction):
       self.log.debug("SELECT element, VO: ", resSelect)
       voColumnIndex = resSelect['Columns'].index('VO')
       for row in resSelect['Value']:
-        vo = row(voColumnIndex)
+        vo = row[voColumnIndex]
         resLogUpdate = self.rsClient.addOrModifyStatusElement(element, 'Status',
                                                               name=name, statusType=statusType, vO=vo,
                                                               status=status, elementType=elementType,
