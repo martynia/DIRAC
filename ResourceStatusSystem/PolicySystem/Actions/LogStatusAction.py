@@ -57,7 +57,6 @@ class LogStatusAction(BaseAction):
     if reason is None:
       return S_ERROR('reason should not be None')
 
-    print("EnforcementResult", self.enforcementResult)
     vo = self.enforcementResult.get('VO')
     # Truncate reason to fit in database column
     reason = (reason[:508] + '..') if len(reason) > 508 else reason
@@ -70,7 +69,6 @@ class LogStatusAction(BaseAction):
       if not resSelect['OK']:
         self.log.error("Could not obtain all VO rows for element: %s" % element)
         return resSelect
-      self.log.debug("SELECT element, VO: ", resSelect)
       voColumnIndex = resSelect['Columns'].index('VO')
       for row in resSelect['Value']:
         vo = row[voColumnIndex]
