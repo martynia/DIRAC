@@ -115,3 +115,17 @@ class FileCatalogClientBase(Client):
     """
     return S_OK({'Failed': {},
                  'Successful': dict.fromkeys(lfns, {'Write': True, "Read": True})})
+
+  def getPfnFromLfn(self, lfn, se):
+    """
+    A default method to return an SE specific pfn which is non standard.
+    This method returns S_OK(None) to maintain a default DataManager.putAndRegister behaviour.
+
+    :param lfn: logical file name
+    :type lfn: str
+    :param se: Storage Element name
+    :type se: str
+    :return: S_OK(None)
+    :rtype: dict
+    """
+    return S_OK(None)
