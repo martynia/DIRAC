@@ -104,7 +104,7 @@ class ElementStatusBase(object):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.name, self.statustype, self.vo, self.status, self.reason,
+    return [self.name, self.statustype, self.status, self.reason,
             self.dateeffective, self.tokenexpiration, self.elementtype,
             self.lastchecktime, self.tokenowner, self.vo]
 
@@ -147,7 +147,7 @@ class ElementStatusBaseWithID(ElementStatusBase):
   def toList(self):
     """ Simply returns a list of column values
     """
-    return [self.id, self.name, self.statustype,  self.vo, self.status, self.reason,
+    return [self.id, self.name, self.statustype,  self.status, self.reason,
             self.dateeffective, self.tokenexpiration, self.elementtype,
             self.lastchecktime, self.tokenowner, self.vo]
 
