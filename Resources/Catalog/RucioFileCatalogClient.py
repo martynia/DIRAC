@@ -1,37 +1,33 @@
+""" The RucioFileCatalogClient is a class that allows to interface Dirac with Rucio
+"""
 from __future__ import print_function
 from __future__ import absolute_import
 from __future__ import division
 __RCSID__ = "$Id"
 
-from stat import *
 import os
-import re
-import time
+import uuid
 import datetime
 from copy import deepcopy
 
 import DIRAC
-from DIRAC                                              import gConfig
 from DIRAC                                              import S_OK, S_ERROR, gLogger
 from DIRAC.Resources.Catalog.Utilities                  import checkCatalogArguments
-from DIRAC.Core.Utilities.Time                          import fromEpoch
 from DIRAC.Core.Utilities.List                          import breakListIntoChunks
-from DIRAC.Core.Security.ProxyInfo                      import getProxyInfo, formatProxyInfoAsString
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry  import getDNForUsername, getVOMSAttributeForGroup, \
-                                                               getVOForGroup, getVOOption
+from DIRAC.Core.Security.ProxyInfo                      import getProxyInfo
 from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
 
-#from DIRAC.Core.Base import Script
-#Script.parseCommandLine()
-
 from rucio.client import Client
-from rucio.common.exception import DataIdentifierNotFound, DuplicateContent, FileReplicaAlreadyExists, \
-                                   FileAlreadyExists, CannotAuthenticate, MissingClientParameter
+from rucio.common.exception import DataIdentifierNotFound, FileReplicaAlreadyExists, \
+                                   CannotAuthenticate, MissingClientParameter
 from rucio.common.utils import chunks, extract_scope
+sLog = gLogger.getSubLogger(__name__)
 
 
-def get_scope(lfn, scopes=[], client=None):
-  scope, name = extract_scope(did=lfn, scopes=scopes)
+def get_scope(lfn, scopes=[]):
+  """Helper function that extract the scope from the LFN
+  """
+  scope, _ = extract_scope(did=lfn, scopes=scopes)
   return scope
 
 
@@ -60,38 +56,55 @@ class RucioFileCatalogClient(FileCatalogClientBase):
                                                          'createUserMapping', 'removeUserDirectory']
 
   def __init__(self, **options):
+    """ Constructor
+    """
     self.convertUnicode = True
     proxyInfo = {'OK': False}
-    if not os.getenv('X509_USER_PROXY'):
+    if os.getenv('RUCIO_AUTH_TYPE') == 'x509_proxy' and not os.getenv('X509_USER_PROXY'):
       proxyInfo = getProxyInfo(disableVOMS=True)
       if proxyInfo['OK']:
         os.environ['X509_USER_PROXY'] = proxyInfo['Value']['path']
-        gLogger.debug('X509_USER_PROXY not defined. Using %s' % proxyInfo['Value']['path'])
+        sLog.debug('X509_USER_PROXY not defined. Using %s' % proxyInfo['Value']['path'])
     try:
-      self.client = Client()
-    except (CannotAuthenticate, MissingClientParameter) as err:
-      if not proxyInfo['OK']:
-        proxyInfo = getProxyInfo(disableVOMS=True)
-      if proxyInfo['OK']:
-        dn = proxyInfo['Value']['identity']
-        username = proxyInfo['Value']['username']
-        os.environ['RUCIO_ACCOUNT'] = username
-        gLogger.debug('Switching to account %s mapped to proxy %s' %(username, dn))
+      self._client = Client()
+      self.account = self._client.account
+    except (CannotAuthenticate, MissingClientParameter):
+      if os.getenv('RUCIO_AUTH_TYPE') == 'x509_proxy':
+        if not proxyInfo['OK']:
+          proxyInfo = getProxyInfo(disableVOMS=True)
+        if proxyInfo['OK']:
+          dn = proxyInfo['Value']['identity']
+          username = proxyInfo['Value']['username']
+          self.account = username
+          sLog.debug('Switching to account %s mapped to proxy %s' %(username, dn))
 
     try:
-      self.client = Client()
-      self.scopes = self.client.list_scopes()
-      self.account = self.client.account
+      self._client = Client(account=self.account)
+      self.scopes = self._client.list_scopes()
     except Exception as err:
-      gLogger.error('Cannot instantiate RucioFileCatalog interface, error : %s' % str(err))
+        sLog.error('Cannot instantiate RucioFileCatalog interface', 'error : %s' % repr(err))
+
+  @property
+  def client(self):
+    """ Check if the session to the server is still active and return an instance of RucioClient
+    """
+    try:
+      self._client.ping()
+      return self._client
+    except:
+      self._client = Client(account=self.account)
+      self.scopes = self._client.list_scopes()
+      return self._client
 
 
   def __getDidsFromLfn(self, lfn):
+    """ Helper function to convert LFNs into DIDs
+    """
     if lfn.find(':') > -1:
       scope, name = lfn.split(':')
       return {'scope': scope, 'name': name}
     else:
-      scope = get_scope(lfn, scopes=self.scopes, client=self.client)
+      scope = get_scope(lfn, scopes=self.scopes)
     return {'scope': scope, 'name': lfn}
 
 
@@ -99,7 +112,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
   def getCompatibleMetadata(self, queryDict, path, credDict):
     """ Get distinct metadata values compatible with the given already defined metadata
     """
-    self.client = Client()
     if path != '/':
       result = self.exists(path)
       if not result['OK']:
@@ -117,11 +129,10 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
     lfnChunks = breakListIntoChunks( lfns, 1000 )
 
-    self.client = Client()
     for lfnList in lfnChunks:
       try:
-        DidList = [self.__getDidsFromLfn(lfn) for lfn in lfnList if lfn]
-        for rep in self.client.list_replicas(DidList):
+        didList = [self.__getDidsFromLfn(lfn) for lfn in lfnList if lfn]
+        for rep in self.client.list_replicas(didList):
           if rep:
             lfn = rep['name']
             if self.convertUnicode:
@@ -134,7 +145,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
               else:
                 result['Value']['Successful'][lfn][rse] = rep['rses'][rse][0]
           else:
-            for did in DidList:
+            for did in didList:
               result['Value']['Failed'][did['name']] = 'Error'
       except Exception as err:
         return S_ERROR(str(err))
@@ -147,7 +158,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
 
-    self.client = Client()
     for lfn in lfns:
       try:
         did = self.__getDidsFromLfn(lfn)
@@ -162,12 +172,30 @@ class RucioFileCatalogClient(FileCatalogClientBase):
               childName = str(childName)
             if child['type'] in ['DATASET', 'CONTAINER']:
               result['Value']['Successful'][lfn]['SubDirs'][childName] = {'Mode': 509}
+              if verbose:
+                result['Value']['Successful'][lfn]['SubDirs'][childName] = {'Status': '-',
+                                                                            'CreationDate': datetime.datetime(1970, 1, 1),
+                                                                            'ChecksumType': '',
+                                                                            'OwnerRole': 'None',
+                                                                            'Checksum': '',
+                                                                            'NumberOfLinks': -999,
+                                                                            'OwnerDN': 'None',
+                                                                            'Mode': 509,
+                                                                            'ModificationDate': datetime.datetime(1970, 1, 1),
+                                                                            'GUID': '',
+                                                                            'LastAccess': 0,
+                                                                            'Size': 0}
             else:
               result['Value']['Successful'][lfn]['Files'][childName] = {'Mode': 509}
+              if verbose:
+                pass
         elif meta['did_type'] == 'DATASET':
           file_dict = {}
           for file_did in self.client.list_files(scope=did['scope'], name=did['name']):
-            file_dict[file_did['name']] = file_did['guid']
+            guid = file_did['guid']
+            file_dict[file_did['name']] = guid
+            if guid:
+              file_dict[file_did['name']] = str(uuid.UUID(guid))
           if lfn not in result['Value']['Successful']:
             result['Value']['Successful'][lfn] = {'Files': {}, 'Links': {}, 'SubDirs': {}}
           for rep in self.client.list_replicas([did, ]):
@@ -177,6 +205,19 @@ class RucioFileCatalogClient(FileCatalogClientBase):
                 name = str(name)
               result['Value']['Successful'][lfn]['Files'][name] = {'Metadata': {}, 'Replicas': {}}
               result['Value']['Successful'][lfn]['Files'][name]['Metadata'] = {'GUID': str(file_dict.get(name, 'UNKNOWN')), 'Mode': 436, 'Size': rep['bytes']}
+              if verbose:
+                result['Value']['Successful'][lfn]['Files'][name]['Metadata']  = {'Status': '-',
+                                                                                  'CreationDate': datetime.datetime(1970, 1, 1),
+                                                                                  'ChecksumType': 'AD',
+                                                                                  'OwnerRole': 'None',
+                                                                                  'Checksum': str(rep['adler32']),
+                                                                                  'NumberOfLinks': 1,
+                                                                                  'OwnerDN': 'None',
+                                                                                  'Mode': 436,
+                                                                                  'ModificationDate': datetime.datetime(1970, 1, 1),
+                                                                                  'GUID': str(file_dict.get(name, 'UNKNOWN')),
+                                                                                  'LastAccess': 0,
+                                                                                  'Size': rep['bytes']}
               for rse in rep['rses']:
                 pfn = rep['rses'][rse][0]
                 if self.convertUnicode:
@@ -195,8 +236,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """
     successful, failed = {}, {}
     lfnChunks = breakListIntoChunks(lfns, 1000)
-    listFiles = deepcopy(lfns.keys())
-    self.client = Client()
+    listFiles = deepcopy(list(lfns))
     for chunk in lfnChunks:
       try:
         dids = [self.__getDidsFromLfn(lfn) for lfn in chunk]
@@ -218,10 +258,13 @@ class RucioFileCatalogClient(FileCatalogClientBase):
             except ValueError:
               pass
           else:
+            guid = meta['guid']
+            if guid:
+              guid = str(uuid.UUID(guid))
             successful[lfn] = {'Checksum': str(meta['adler32']),
                                'ChecksumType': 'AD',
                                'CreationDate': meta['created_at'],
-                               'GUID': str(meta['guid']),
+                               'GUID': guid,
                                'Mode': 436,
                                'ModificationDate': meta['updated_at'],
                                'NumberOfLinks': 1,
@@ -246,7 +289,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """ Check if the path exists
     """
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
-    self.client = Client()
     for lfn in lfns:
       try:
         did = self.__getDidsFromLfn(lfn)
@@ -265,9 +307,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """ Get the size of a supplied file
     """
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
-    self.client = Client()
     for lfn in lfns:
-      size = 0
       try:
         did = self.__getDidsFromLfn(lfn)
         meta = self.client.get_metadata(did['scope'], did['name'])
@@ -282,56 +322,63 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     return result
 
 
+
   @checkCatalogArguments
   def isDirectory(self, lfns):
     """ Determine whether the path is a directory
     """
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
-    self.client = Client()
+    dids = []
     for lfn in lfns:
-      try:
-        did = self.__getDidsFromLfn(lfn)
-        meta = self.client.get_metadata(did['scope'], did['name'])
+      dids.append(self.__getDidsFromLfn(lfn))
+    try:
+      for meta in self.client.get_metadata_bulk(dids):
+        lfn = str(meta['name'])
         if meta['did_type'] in ['DATASET', 'CONTAINER']:
           result['Value']['Successful'][lfn] = True
         else:
           result['Value']['Successful'][lfn] = False
-      except DataIdentifierNotFound:
-        result['Value']['Failed'][lfn] = 'No such file or directory'
-      except Exception as err:
-        return S_ERROR(str(err))
+      for lfn in lfns:
+        if lfn not in result['Value']['Successful'] and lfn not in result['Value']['Failed']:
+          result['Value']['Failed'][lfn] = 'No such file or directory'
+    except Exception as err:
+      return S_ERROR(str(err))
     return result
 
 
 
   @checkCatalogArguments
   def isFile(self, lfns):
-    """ Determine whether the path is a directory
+    """ Determine whether the path is a file
     """
+
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
-    self.client = Client()
+    dids = []
     for lfn in lfns:
-      try:
-        did = self.__getDidsFromLfn(lfn)
-        meta = self.client.get_metadata(did['scope'], did['name'])
-        if meta['did_type'] == 'FILE':
+      dids.append(self.__getDidsFromLfn(lfn))
+    try:
+      for meta in self.client.get_metadata_bulk(dids):
+        lfn = str(meta['name'])
+        if meta['did_type'] in ['FILE']:
           result['Value']['Successful'][lfn] = True
         else:
           result['Value']['Successful'][lfn] = False
-      except DataIdentifierNotFound:
-        result['Value']['Failed'][lfn] = 'No such file or directory'
-      except Exception as err:
-        return S_ERROR(str(err))
+      for lfn in lfns:
+        if lfn not in result['Value']['Successful'] and lfn not in result['Value']['Failed']:
+          result['Value']['Failed'][lfn] = 'No such file or directory'
+    except Exception as err:
+      return S_ERROR(str(err))
     return result
 
 
 
   @checkCatalogArguments
   def addFile(self, lfns):
+    """ Register supplied files
+    """
     failed = {}
     successful = {}
     deterministicDictionary = {}
-    self.client = Client()
     for lfnList in breakListIntoChunks(lfns, 100):
       listLFNs = []
       for lfn in list(lfnList):
@@ -358,6 +405,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
           successful[lfn] = True
       except Exception as err:
         # Try inserting one by one
+        sLog.warning('Cannot bulk insert files', 'error : %s' % repr(err))
         for lfn in list(lfnList):
           try:
             self.client.add_files(lfns=lfn, ignore_availability=True)
@@ -377,7 +425,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     failed = {}
     successful = {}
     deterministicDictionary = {}
-    self.client = Client()
     for lfn, info in lfns.items():
       pfn = None
       se = info['SE']
@@ -398,7 +445,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
         if pfn:
           rep['pfn'] = pfn
         self.client.add_replicas(rse=se, files=[rep, ])
-        self.client.add_replication_rule([{'scope': did['scope'], 'name': did['name']}], copies=1, rse_expression=se, weight=None, lifetime=None, grouping='NONE', account=self.account)
+        self.client.add_replication_rule([{'scope': did['scope'], 'name': did['name']}], copies=1, activity='User Transfers', rse_expression=se, weight=None, lifetime=None, grouping='NONE', account=self.account)
         successful[lfn] = True
       except FileReplicaAlreadyExists:
         successful[lfn] = True
@@ -410,9 +457,10 @@ class RucioFileCatalogClient(FileCatalogClientBase):
 
   @checkCatalogArguments
   def removeReplica(self, lfns):
+    """ Remove the supplied replicas
+    """
     failed = {}
     successful = {}
-    self.client = Client()
     for lfn, info in lfns.items():
       if 'SE' not in info:
         failed[lfn] = "Required parameters not supplied"
@@ -456,7 +504,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """ Remove the supplied path
     """
     resDict = {'Successful': {}, 'Failed': {}}
-    self.client = Client()
     for lfn in lfns:
       try:
         did = self.__getDidsFromLfn(lfn)
@@ -484,7 +531,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """ Remove the supplied directory
     """
     resDict = {'Successful': {}, 'Failed': {}}
-    self.client = Client()
     for lfn in lfns:
       try:
         did = self.__getDidsFromLfn(lfn)
@@ -509,7 +555,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """ Get the directory size
     """
     resDict = {'Successful': {}, 'Failed': {}}
-    self.client = Client()
     for lfn in lfns:
       try:
         did = self.__getDidsFromLfn(lfn)
