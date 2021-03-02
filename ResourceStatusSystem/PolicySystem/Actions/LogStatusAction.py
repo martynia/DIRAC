@@ -63,9 +63,9 @@ class LogStatusAction(BaseAction):
     # VO = 'all' (non-VO aware policy) for a combined policy affects all VOs for a given site or resource,
     if vo == 'all':
       resSelect = self.rsClient.selectStatusElement(element, 'Status', name=name, statusType=None, vO=None,
-                                      status=None, elementType=None, reason=None,
-                                      dateEffective=None, lastCheckTime=None,
-                                      tokenOwner='rs_svc', tokenExpiration=None, meta=None)
+                                                    status=None, elementType=None, reason=None,
+                                                    dateEffective=None, lastCheckTime=None,
+                                                    tokenOwner='rs_svc', tokenExpiration=None, meta=None)
       if not resSelect['OK']:
         self.log.error("Could not obtain all VO rows for element: %s" % element)
         return resSelect
@@ -81,10 +81,10 @@ class LogStatusAction(BaseAction):
 
     else:
       resLogUpdate = self.rsClient.addOrModifyStatusElement(element, 'Status',
-                                                          name=name, statusType=statusType, vO=vo,
-                                                          status=status, elementType=elementType,
-                                                          reason=reason
-                                                          )
+                                                            name=name, statusType=statusType, vO=vo,
+                                                            status=status, elementType=elementType,
+                                                            reason=reason
+                                                            )
 
     return resLogUpdate
 

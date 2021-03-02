@@ -5,7 +5,7 @@
 
 """
 from __future__ import division
-from DIRAC                                              import S_OK
+from DIRAC import S_OK
 from DIRAC.ResourceStatusSystem.PolicySystem.PolicyBase import PolicyBase
 
 __RCSID__ = '$Id$'
@@ -57,14 +57,14 @@ class PilotEfficiencyPolicy(PolicyBase):
     result['VO'] = commandResult.get('VO', None)
 
     if efficiency is None:
-      result[ 'Status' ] = 'Unknown'
-      result[ 'Reason' ] = 'Pilot efficiency value is not present in the result obtained'
+      result['Status'] = 'Unknown'
+      result['Reason'] = 'Pilot efficiency value is not present in the result obtained'
       return S_OK(result)
 
     if efficiency <= bannedLimit:
-      result[ 'Status' ] = 'Banned'
+      result['Status'] = 'Banned'
     elif efficiency <= degradedLimit:
-      result[ 'Status' ] = 'Degraded'
+      result['Status'] = 'Degraded'
     else:
       result['Status'] = 'Active'
 
