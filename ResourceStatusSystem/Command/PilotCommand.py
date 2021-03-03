@@ -96,7 +96,7 @@ class PilotCommand(Command):
       # You should never see this error
       return S_ERROR('"%s" is not  Site nor Resource' % element)
 
-    pilotsResults = self.pilots.getPilotSummaryWeb(wmsDict, [], 0, 0)
+    #pilotsResults = self.pilots.getPilotSummaryWeb(wmsDict, [], 0, 0)
 
     if element == 'Resource':
       pilotsResultPivot = self.pilots.getGroupedPilotSummary({}, ['GridSite', 'DestinationSite', 'OwnerGroup'])
@@ -106,17 +106,8 @@ class PilotCommand(Command):
       # You should never see this error
       return S_ERROR('"%s" is not  Site nor Resource' % element)
 
-    import pprint
-    print "PilotCommand -> Pilots results: "
-    pp = pprint.PrettyPrinter(indent=4)
-    pp.pprint(pilotsResults)
-
-    print('---------------- from pivoted table ---------------')
-    pp.pprint(pilotsResultPivot)
-
     if not pilotsResults['OK']:
       return pilotsResults
-    pilotsResults = pilotsResults['Value']
     pilotsResults = pilotsResultPivot['Value']
 
     if 'ParameterNames' not in pilotsResults:
