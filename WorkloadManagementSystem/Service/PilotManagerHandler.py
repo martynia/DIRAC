@@ -211,8 +211,7 @@ class PilotManagerHandler(RequestHandler):
     :param columnList: a list of columns to GROUP BY (less status column)
     :return: a dictionary containing column names and data records
     """
-    result = pilotDB.getGroupedPilotSummary(selectDict, columnList)
-    return result
+    return pilotDB.getGroupedPilotSummary(selectDict, columnList)
 
   ##############################################################################
   types_getPilots = [(basestring, int, long)]
