@@ -96,8 +96,6 @@ class PilotCommand(Command):
       # You should never see this error
       return S_ERROR('"%s" is not  Site nor Resource' % element)
 
-    #pilotsResults = self.pilots.getPilotSummaryWeb(wmsDict, [], 0, 0)
-
     if element == 'Resource':
       pilotsResultPivot = self.pilots.getGroupedPilotSummary({}, ['GridSite', 'DestinationSite', 'OwnerGroup'])
     elif element == 'Site':
@@ -106,8 +104,8 @@ class PilotCommand(Command):
       # You should never see this error
       return S_ERROR('"%s" is not  Site nor Resource' % element)
 
-    if not pilotsResults['OK']:
-      return pilotsResults
+    if not pilotsResultPivot['OK']:
+      return pilotsResultPivot
     pilotsResults = pilotsResultPivot['Value']
 
     if 'ParameterNames' not in pilotsResults:
