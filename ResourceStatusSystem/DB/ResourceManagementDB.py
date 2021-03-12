@@ -539,7 +539,7 @@ class ResourceManagementDB(object):
       # setting up the select query
       if not columnNames:  # query on the whole table
         wholeTable = True
-        columns = table_c.__table__.columns  # retrieve the column names
+        columns = table_c.columnsOrder  # retrieve the column names
         columnNames = [str(column).split('.')[1] for column in columns]
         select = Query(table_c, session=session)
       else:  # query only the selected columns
