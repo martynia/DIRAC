@@ -540,9 +540,8 @@ class ResourceManagementDB(object):
       if not columnNames:  # query on the whole table
         wholeTable = True
         # retrieve the column names in the correct order
-        columns = getattr(table_c, 'columnsOrder', table_c.__table__.columns)
-        # retrieve the column names
-        columnNames = [str(column).split('.')[1] for column in columns]
+        columnNames = getattr(table_c, 'columnsOrder',
+                              [str(column).split('.')[1] for column in table_c.__table__.columns])
         select = Query(table_c, session=session)
       else:  # query only the selected columns
         wholeTable = False
