@@ -220,6 +220,8 @@ class PilotCache(rmsBase):
   pilotsperjob = Column('PilotsPerJob', Float(asdecimal=False), nullable=False, server_default='0')
   lastchecktime = Column('LastCheckTime', DateTime, nullable=False)
 
+  columnsOrder = ['Site', 'CE', 'Status', 'PilotJobEff', 'PilotsPerJob', 'LastCheckTime', 'VO']
+
   def fromDict(self, dictionary):
     """
     Fill the fields of the PilotCache object from a dictionary
