@@ -34,6 +34,7 @@ def registerSwitches():
       ('tokenOwner=', 'Owner of the token; None if default'),
       ('statusType=', 'StatusType; None if default'),
       ('status=', 'Status; None if default'),
+      ('VO=', 'Virtual organisation; None if default')
   )
 
   for switch in switches:
@@ -69,6 +70,7 @@ def parseSwitches():
   switches.setdefault('tokenOwner', None)
   switches.setdefault('statusType', None)
   switches.setdefault('status', None)
+  switches.setdefault('VO', None)
 
   if 'element' not in switches:
     subLogger.error("element Switch missing")
@@ -95,10 +97,11 @@ def getElements():
   rssClient = ResourceStatusClient.ResourceStatusClient()
 
   meta = {'columns': []}
-  for key in ('Name', 'StatusType', 'Status', 'ElementType', 'TokenOwner'):
+  for key in ('name', 'statusType', 'status', 'elementType', 'tokenOwner', 'VO'):
     # Transforms from upper lower case to lower upper case
-    if switchDict[key[0].lower() + key[1:]] is None:
-      meta['columns'].append(key)
+#    if switchDict[key[0].lower() + key[1:]] is None:
+    if switchDict[key] is None:
+      meta['columns'].append(key[0].upper()+key[1:])
 
   elements = rssClient.selectStatusElement(
       switchDict['element'], 'Status',
@@ -107,6 +110,7 @@ def getElements():
       status=switchDict['status'].split(',') if switchDict['status'] else None,
       elementType=switchDict['elementType'].split(',') if switchDict['elementType'] else None,
       tokenOwner=switchDict['tokenOwner'].split(',') if switchDict['tokenOwner'] else None,
+      vO=switchDict['VO'].split(',') if switchDict['VO'] else None,
       meta=meta)
 
   return elements
@@ -121,15 +125,15 @@ def tabularPrint(elementsList):
   subLogger.notice('Selection parameters:')
   subLogger.notice('  %s: %s' % ('element'.ljust(15), switchDict['element']))
   titles = []
-  for key in ('Name', 'StatusType', 'Status', 'ElementType', 'TokenOwner'):
+  for key in ('name', 'statusType', 'status', 'elementType', 'tokenOwner', 'VO'):
 
     # Transforms from upper lower case to lower upper case
-    keyT = key[0].lower() + key[1:]
+    #keyT = key[0].lower() + key[1:]
 
-    if switchDict[keyT] is None:
-      titles.append(key)
+    if switchDict[key] is None:
+      titles.append(key[0].upper()+key[1:])
     else:
-      subLogger.notice('  %s: %s' % (key.ljust(15), switchDict[keyT]))
+      subLogger.notice('  %s: %s' % (key.ljust(15), switchDict[key]))
   subLogger.notice('')
 
   subLogger.notice(printTable(titles, elementsList, printOut=False,
