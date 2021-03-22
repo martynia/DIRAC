@@ -39,6 +39,7 @@ def registerSwitches():
       ('reason=', 'Reason to set the Status'),
       ('days=', 'Number of days the token is acquired'),
       ('releaseToken', 'Release the token and let the RSS take control'),
+      ('VO=', 'VO to set a token for (obligatory)')
   )
 
   for switch in switches:
@@ -76,7 +77,7 @@ def parseSwitches():
   else:
     switches['releaseToken'] = False
 
-  for key in ('element', 'name', 'reason'):
+  for key in ('element', 'name', 'reason', 'VO'):
 
     if key not in switches:
       subLogger.error("%s Switch missing" % key)
@@ -122,6 +123,7 @@ def setToken(user):
   elements = rssClient.selectStatusElement(switchDict['element'], 'Status',
                                            name=switchDict['name'],
                                            statusType=switchDict['statusType'],
+                                           vO=switchDict['VO'],
                                            meta={'columns': ['StatusType', 'TokenOwner']})
 
   if not elements['OK']:
@@ -130,8 +132,8 @@ def setToken(user):
 
   # If there list is empty they do not exist on the DB !
   if not elements:
-    subLogger.warn('Nothing found for %s, %s, %s' % (switchDict['element'],
-                                                     switchDict['name'],
+    subLogger.warn('Nothing found for %s, %s, %s %s' % (switchDict['element'],
+                                                     switchDict['name'], switchDict['VO'],
                                                      switchDict['statusType']))
     return S_OK()
 
@@ -157,6 +159,7 @@ def setToken(user):
                                            statusType=statusType,
                                            reason=switchDict['reason'],
                                            tokenOwner=newTokenOwner,
+                                           vO=switchDict['VO'],
                                            tokenExpiration=tokenExpiration)
     if not result['OK']:
       return result
@@ -168,7 +171,7 @@ def setToken(user):
     else:
       msg = '(aquired from %s)' % tokenOwner
 
-    subLogger.info('%s:%s %s' % (switchDict['name'], statusType, msg))
+    subLogger.info('name:%s, VO:%s statusType:%s %s' % (switchDict['name'], switchDict['VO'], statusType, msg))
   return S_OK()
 
 
