@@ -205,7 +205,7 @@ class PilotManagerHandler(RequestHandler):
   def export_getGroupedPilotSummary(cls, selectDict, columnList):
     """
     Get pilot summary showing grouped by columns in columnList, all pilot states
-    and pilot efficincies in a single row.
+    and pilot efficiencies in a single row.
 
     :param selectDict: additional arguments to SELECT clause
     :param columnList: a list of columns to GROUP BY (less status column)
