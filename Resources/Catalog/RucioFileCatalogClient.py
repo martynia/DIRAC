@@ -24,9 +24,11 @@ from rucio.common.utils import chunks, extract_scope
 sLog = gLogger.getSubLogger(__name__)
 
 
-def get_scope(lfn, scopes=[]):
+def get_scope(lfn, scopes=None):
   """Helper function that extract the scope from the LFN
   """
+  if scopes is None:
+    scopes = []
   scope, _ = extract_scope(did=lfn, scopes=scopes)
   return scope
 
@@ -91,7 +93,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     try:
       self._client.ping()
       return self._client
-    except:
+    except Exception:
       self._client = Client(account=self.account)
       self.scopes = self._client.list_scopes()
       return self._client
@@ -102,10 +104,10 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """
     if lfn.find(':') > -1:
       scope, name = lfn.split(':')
-      return {'scope': scope, 'name': name}
     else:
       scope = get_scope(lfn, scopes=self.scopes)
-    return {'scope': scope, 'name': lfn}
+      name = lfn
+    return {'scope': scope, 'name': name}
 
 
   @checkCatalogArguments
@@ -328,9 +330,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """ Determine whether the path is a directory
     """
     result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
-    dids = []
-    for lfn in lfns:
-      dids.append(self.__getDidsFromLfn(lfn))
+    dids = [self.__getDidsFromLfn(lfn) for lfn in lfns]
     try:
       for meta in self.client.get_metadata_bulk(dids):
         lfn = str(meta['name'])
@@ -369,7 +369,6 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     except Exception as err:
       return S_ERROR(str(err))
     return result
-
 
 
   @checkCatalogArguments

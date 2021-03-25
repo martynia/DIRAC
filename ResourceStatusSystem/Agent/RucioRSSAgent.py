@@ -26,7 +26,8 @@ class RucioRSSAgent(AgentModule):
 
     :param self: self reference
     """
-    gLogger.info("Starting RucioRSSAgent")
+    self.log =  gLogger.getSubLogger('RucioSynchronizer')
+    self.log.info("Starting RucioRSSAgent")
     return S_OK()
 
   def execute(self):
@@ -39,7 +40,7 @@ class RucioRSSAgent(AgentModule):
     try: 
       for rse in client.list_rses():
         thisSe = rse['rse']
-        gLogger.info("Running on %s" % thisSe)
+        self.log.info("Running on %s" % thisSe)
         resStatus =  rSS.getElementStatus(thisSe, "StorageElement")
         dictSe = client.get_rse(thisSe)
         if resStatus['OK']:
@@ -49,15 +50,15 @@ class RucioRSSAgent(AgentModule):
           availabilityDelete = True if seAccessValue['RemoveAccess'] == 'Active' else False
           isUpdated = False
           if dictSe['availability_read'] != availabilityRead:
-            gLogger.info('Set availability_read for %s to %s' % (thisSe, availabilityRead))
+            self.log.info('Set availability_read for %s to %s' % (thisSe, availabilityRead))
             client.update_rse(thisSe, {'availability_read': availabilityRead})
             isUpdated = True
           if dictSe['availability_write'] != availabilityWrite:
-            gLogger.info('Set availability_write for %s to %s' % (thisSe, availabilityWrite))
+            self.log.info('Set availability_write for %s to %s' % (thisSe, availabilityWrite))
             client.update_rse(thisSe, {'availability_write': availabilityWrite})
             isUpdated = True
           if dictSe['availability_delete'] != availabilityDelete:
-            gLogger.info('Set availability_delete for %s to %s' % (thisSe, availabilityDelete))
+            self.log.info('Set availability_delete for %s to %s' % (thisSe, availabilityDelete))
             client.update_rse(thisSe, {'availability_delete': availabilityDelete})
             isUpdated = True
           #### TEMPORARY FIX
