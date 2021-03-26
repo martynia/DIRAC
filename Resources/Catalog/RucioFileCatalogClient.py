@@ -329,21 +329,18 @@ class RucioFileCatalogClient(FileCatalogClientBase):
   def isDirectory(self, lfns):
     """ Determine whether the path is a directory
     """
-    result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
+    result = {'Successful': {}, 'Failed': {}}
     dids = [self.__getDidsFromLfn(lfn) for lfn in lfns]
     try:
       for meta in self.client.get_metadata_bulk(dids):
         lfn = str(meta['name'])
-        if meta['did_type'] in ['DATASET', 'CONTAINER']:
-          result['Value']['Successful'][lfn] = True
-        else:
-          result['Value']['Successful'][lfn] = False
+        result['Successful'][lfn] = (meta['did_type'] in ['DATASET', 'CONTAINER'])
       for lfn in lfns:
-        if lfn not in result['Value']['Successful'] and lfn not in result['Value']['Failed']:
-          result['Value']['Failed'][lfn] = 'No such file or directory'
+        if lfn not in result['Successful'] and lfn not in result['Failed']:
+          result['Failed'][lfn] = 'No such file or directory'
     except Exception as err:
       return S_ERROR(str(err))
-    return result
+    return S_OK(result)
 
 
 
@@ -351,24 +348,20 @@ class RucioFileCatalogClient(FileCatalogClientBase):
   def isFile(self, lfns):
     """ Determine whether the path is a file
     """
-
-    result = {'OK': True, 'Value': {'Successful': {}, 'Failed': {}}}
+    result = {'Successful': {}, 'Failed': {}}
     dids = []
     for lfn in lfns:
       dids.append(self.__getDidsFromLfn(lfn))
     try:
       for meta in self.client.get_metadata_bulk(dids):
         lfn = str(meta['name'])
-        if meta['did_type'] in ['FILE']:
-          result['Value']['Successful'][lfn] = True
-        else:
-          result['Value']['Successful'][lfn] = False
+        result['Successful'][lfn] = (meta['did_type'] in ['FILE'])
       for lfn in lfns:
-        if lfn not in result['Value']['Successful'] and lfn not in result['Value']['Failed']:
-          result['Value']['Failed'][lfn] = 'No such file or directory'
+        if lfn not in result['Successful'] and lfn not in result['Failed']:
+          result['Failed'][lfn] = 'No such file or directory'
     except Exception as err:
       return S_ERROR(str(err))
-    return result
+    return S_OK(result)
 
 
   @checkCatalogArguments

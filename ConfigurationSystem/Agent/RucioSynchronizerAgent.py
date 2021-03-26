@@ -144,12 +144,15 @@ class RucioSynchronizerAgent(AgentModule):
               continue
 
             # Add RSE attributes for the new RSE
-            # TODO read from CS
+            ret = gConfig.getOptionsDict('Resources/FTSEndpoints/FTS3')
+            ftsList = ''
+            if ret['OK']:
+              ftsList = ",".join(ret['Value'].values())
             dictRSEAttributes = {'naming_convention': 'BelleII',
                                  'ANY': True,
-                                 'fts': 'https://kek2-fts01.cc.kek.jp:8446'}
+                                 'fts': ftsList}
             for key in dictRSEAttributes:
-              self.log.info('On %s, setting %s : %s' % (se, key, dictRSEAttributes[key]))
+              self.log.info('On %s, setting %s : %s', se, key, dictRSEAttributes[key])
               client.add_rse_attribute(se, key, value=dictRSEAttributes[key])
             client.set_local_account_limit('root', se, 100000000000000000)
 
@@ -157,7 +160,7 @@ class RucioSynchronizerAgent(AgentModule):
           try:
             protocols = client.get_protocols(se)
           except RSEProtocolNotSupported as err:
-            self.log.info('Cannot get protocols for %s : %s' % (se, err))
+            self.log.info('Cannot get protocols for %s : %s', se, str(err))
             protocols = []
           existing_protocols = []
           for prot in protocols:
@@ -166,23 +169,22 @@ class RucioSynchronizerAgent(AgentModule):
                                        str(prot['port']),
                                        str(prot['prefix'])))
           protocols_to_create = []
-          for cnt in range(len(result['Value'][se])):
-            params = result['Value'][se][cnt]
+          for params in result['Value'][se]:
             prot = (str(params['scheme']), str(params['hostname']), str(params['port']), str(params['prefix']))
             protocols_to_create.append(prot)
             if prot not in existing_protocols and prot[0] in valid_protocols:
               # The protocol defined in Dirac does not exist in Rucio. Will be created
-              self.log.info('Will create new protocol %s://%s:%s%s on %s' % (params['scheme'],
-                                                                             params['hostname'],
-                                                                             params['port'],
-                                                                             params['prefix'],
-                                                                             se))
+              self.log.info('Will create new protocol %s://%s:%s%s on %s', params['scheme'], \
+                                                                           params['hostname'], \
+                                                                           params['port'], \
+                                                                           params['prefix'], \
+                                                                           se)
               try:
                 client.add_protocol(rse=se, params=params)
               except Duplicate as err:
-                self.log.info('Protocol %s already exists on %s' % (params['scheme'], se))
+                self.log.info('Protocol %s already exists on %s', params['scheme'], se)
               except Exception as err:
-                self.log.error('Cannot create protocol on RSE %s : %s' % (se, str(err)))
+                self.log.error('Cannot create protocol on RSE %s : %s', se, str(err))
             else:
               update = False
               for protocol in protocols:
@@ -208,11 +210,11 @@ class RucioSynchronizerAgent(AgentModule):
                             'delete_lan': params['domains']['lan']['delete'],
                             'delete_wan': params['domains']['wan']['delete'],
                             'third_party_copy': params['domains']['wan']['write']}
-                    self.log.info('Will update protocol %s://%s:%s%s on %s' % (params['scheme'],
-                                                                               params['hostname'],
-                                                                               params['port'],
-                                                                               params['prefix'],
-                                                                               se))
+                    self.log.info('Will update protocol %s://%s:%s%s on %s', params['scheme'], \
+                                                                             params['hostname'], \
+                                                                             params['port'], \
+                                                                             params['prefix'], \
+                                                                             se)
                     client.update_protocols(rse=se,
                                             scheme=params['scheme'],
                                             data=data,
@@ -220,10 +222,10 @@ class RucioSynchronizerAgent(AgentModule):
                                             port=params['port'])
           for prot in existing_protocols:
             if prot not in protocols_to_create:
-              self.log.info('Will delete protocol %s://%s:%s%s on %s' % (prot[0], prot[1], prot[2], prot[3], se))
+              self.log.info('Will delete protocol %s://%s:%s%s on %s', prot[0], prot[1], prot[2], prot[3], se)
               client.delete_protocols(se, scheme=prot[0], hostname=prot[1], port=prot[2])
       else:
-        self.log.error('Cannot get SEs : %s' % result['Value'])
+        self.log.error('Cannot get SEs : %s', result['Value'])
 
       # If new RSE added, add distances
       rses = [rse['rse'] for rse in client.list_rses()]
@@ -233,7 +235,7 @@ class RucioSynchronizerAgent(AgentModule):
           try:
             client.add_distance(src_rse, dest_rse, {'ranking': 1, 'distance': 10})
           except Exception as err:
-            self.log.error('Cannot add distance for %s:%s : %s' % (src_rse, dest_rse, str(err)))
+            self.log.error('Cannot add distance for %s:%s : %s', src_rse, dest_rse, str(err))
 
       # Collect the shares from Dirac Configuration and create them in Rucio
       self.log.info("Synchronizing shares")
@@ -242,29 +244,29 @@ class RucioSynchronizerAgent(AgentModule):
         rseDict = result['Value']
         for rse in rses:
           try:
-            self.log.info('Setting productionSEshare for %s : %s' % (rse, rseDict.get(rse, 0)))
+            self.log.info('Setting productionSEshare for %s : %s', rse, rseDict.get(rse, 0))
             client.add_rse_attribute(rse, 'productionSEshare', rseDict.get(rse, 0))
           except Exception as err:
-            self.log.error('Cannot create productionSEshare for %s' % rse)
+            self.log.error('Cannot create productionSEshare for %s', rse)
       else:
-        self.log.error('Cannot get SEs : %s' % result['Value'])
+        self.log.error('Cannot get SEs : %s', result['Value'])
 
       result = Operations().getSections('Shares')
       if result['OK']:
         for dataLevel in result['Value']:
           result = Operations().getOptionsDict('Shares/%s' % dataLevel)
-          if result['OK']:
-            rseDict = result['Value']
-            for rse in rses:
-              try:
-                self.log.info('Setting %sShare for %s : %s' % (dataLevel, rse, rseDict.get(rse, 0)))
-                client.add_rse_attribute(rse, '%sShare' % dataLevel, rseDict.get(rse, 0))
-              except Exception as err:
-                self.log.error('Cannot create %sShare for %s' % (dataLevel, rse))
-          else:
-            self.log.error('Cannot get SEs : %s' % result['Value'])
+          if not result['OK']:
+            self.log.error('Cannot get SEs : %s', result['Value'])
+            continue
+          rseDict = result['Value']
+          for rse in rses:
+            try:
+              self.log.info('Setting %sShare for %s : %s', dataLevel, rse, rseDict.get(rse, 0))
+              client.add_rse_attribute(rse, '%sShare' % dataLevel, rseDict.get(rse, 0))
+            except Exception as err:
+              self.log.error('Cannot create %sShare for %s', dataLevel, rse)
       else:
-        self.log.error('Cannot get shares : %s' % result['Value'])
+        self.log.error('Cannot get shares : %s', result['Value'])
 
       # Create the RSE attribute PrimaryDataSE and OccupancyLFN
       result = gConfig.getValue('Resources/StorageElementGroups/PrimarySEs')
@@ -272,7 +274,7 @@ class RucioSynchronizerAgent(AgentModule):
       if result['OK']:
         allSEs = result['Value']
         primarySEs = resolveSEGroup('PrimarySEs', allSEs)
-        self.log.info('Will set primarySEs flag to %s' % str(primarySEs))
+        self.log.info('Will set primarySEs flag to %s', str(primarySEs))
         for rse in rses:
           if rse in allSEs:
             storage = StorageElement(rse)
@@ -280,19 +282,19 @@ class RucioSynchronizerAgent(AgentModule):
             try:
               client.add_rse_attribute(rse, 'OccupancyLFN', occupancyLFN)
             except Exception as err:
-              self.log.error('Cannot create RSE attribute OccupancyLFN for %s : %s' % (rse, str(err)))
+              self.log.error('Cannot create RSE attribute OccupancyLFN for %s : %s', rse, str(err))
           if rse in primarySEs:
             try:
               client.add_rse_attribute(rse, 'PrimaryDataSE', True)
             except Exception as err:
-              self.log.error('Cannot create RSE attribute PrimaryDataSE for %s : %s' % (rse, str(err)))
+              self.log.error('Cannot create RSE attribute PrimaryDataSE for %s : %s', rse, str(err))
           else:
             try:
               client.delete_rse_attribute(rse, 'PrimaryDataSE')
             except RSEAttributeNotFound:
               pass
             except Exception as err:
-              self.log.error('Cannot remove RSE attribute PrimaryDataSE for %s : %s' % (rse, str(err)))
+              self.log.error('Cannot remove RSE attribute PrimaryDataSE for %s : %s', rse, str(err))
 
 
       # Collect the user accounts from Dirac Configuration and create user accounts in Rucio
@@ -305,16 +307,16 @@ class RucioSynchronizerAgent(AgentModule):
         email = getUserOption(account, 'Email')
         dnMapping[dn] = email
         if account not in listAccounts:
-          self.log.info('Will create %s with associated DN %s' % (account, dn))
+          self.log.info('Will create %s with associated DN %s', account, dn)
           try:
             client.add_account(account=account, type='USER', email=email)
             listAccounts.append(account)
           except Exception as err:
-            self.log.error('Cannot create account %s : %s' % (account, str(err)))
+            self.log.error('Cannot create account %s : %s', account, str(err))
           try:
             client.add_identity(account=account, identity=dn, authtype='X509', email=email, default=True)
           except Exception as err:
-            self.log.error('Cannot create account %s : %s' % (account, str(err)))
+            self.log.error('Cannot create account %s : %s', account, str(err))
           for rse in rses:
             client.set_local_account_limit(account, rse, 1000000000000000)
         else:
@@ -323,15 +325,15 @@ class RucioSynchronizerAgent(AgentModule):
           except Duplicate:
             pass
           except Exception as err:
-            self.log.error('Cannot create identity %s for account %s : %s' % (dn, account, str(err)))
+            self.log.error('Cannot create identity %s for account %s : %s', dn, account, str(err))
         scope = 'user.' + account
         if scope not in listScopes:
           try:
-            self.log.info('Will create scope %s' % scope)
+            self.log.info('Will create scope %s', scope)
             client.add_scope(account, scope)
-            self.log.info('Scope %s successfully added' % scope)
+            self.log.info('Scope %s successfully added', scope)
           except Exception as err:
-            self.log.error('Cannot create scope %s : %s' % (scope, str(err)))
+            self.log.error('Cannot create scope %s : %s', scope, str(err))
 
       # Collect the group accounts from Dirac Configuration and create service accounts in Rucio
       groups = getAllGroups()
