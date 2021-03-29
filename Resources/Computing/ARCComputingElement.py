@@ -19,6 +19,7 @@ from DIRAC.Core.Utilities.Subprocess import shellCall
 from DIRAC.Resources.Computing.ComputingElement import ComputingElement
 from DIRAC.Core.Utilities.SiteCEMapping import getSiteForCE
 from DIRAC.Core.Utilities.File import makeGuid
+from DIRAC.Core.Utilities.List import breakListIntoChunks
 from DIRAC.Core.Security.ProxyInfo import getVOfromProxyGroup
 
 # Uncomment the following 5 lines for getting verbose ARC api output (debugging)
@@ -29,7 +30,7 @@ from DIRAC.Core.Security.ProxyInfo import getVOfromProxyGroup
 # arc.Logger_getRootLogger().setThreshold(arc.VERBOSE)
 
 CE_NAME = 'ARC'
-MANDATORY_PARAMETERS = ['Queue']  # Probably not mandatory for ARC CEs
+MANDATORY_PARAMETERS = ['Queue']  # Mandatory for ARC CEs in GLUE2?
 
 
 class ARCComputingElement(ComputingElement):
@@ -38,7 +39,8 @@ class ARCComputingElement(ComputingElement):
   def __init__(self, ceUniqueID):
     """ Standard constructor.
     """
-    ComputingElement.__init__(self, ceUniqueID)
+    super(ARCComputingElement, self).__init__(ceUniqueID)
+
     self.ceType = CE_NAME
     self.submittedJobs = 0
     self.mandatoryParameters = MANDATORY_PARAMETERS
@@ -50,10 +52,8 @@ class ARCComputingElement(ComputingElement):
     self.usercfg = arc.common.UserConfig()
     # set the timeout to the default 20 seconds in case the UserConfig constructor did not
     self.usercfg.Timeout(20)  # pylint: disable=pointless-statement
-    if 'Host' in self.ceParameters:
-      self.ceHost = self.ceParameters['Host']
-    if 'GridEnv' in self.ceParameters:
-      self.gridEnv = self.ceParameters['GridEnv']
+    self.ceHost = self.ceParameters.get('Host', self.ceName)
+    self.gridEnv = self.ceParameters.get('GridEnv', self.gridEnv)
     # Used in getJobStatus
     self.mapStates = {'Accepted': 'Scheduled',
                       'Preparing': 'Scheduled',
@@ -165,9 +165,11 @@ class ARCComputingElement(ComputingElement):
     if nProcessors > 1:
       xrslMPAdditions = """
 (count = %(processors)u)
+(countpernode = %(processorsPerNode)u)
 %(xrslMPExtraString)s
       """ % {
           'processors': nProcessors,
+          'processorsPerNode': nProcessors,  # This basically says that we want all processors on the same node
           'xrslMPExtraString': self.xrslMPExtraString
       }
 
@@ -289,10 +291,17 @@ class ARCComputingElement(ComputingElement):
       jobList = [jobIDList]
 
     gLogger.debug("Killing jobs %s" % jobIDList)
+    jobs = []
     for jobID in jobList:
-      job = self.__getARCJob(jobID)
-      if not job.Cancel():
-        gLogger.debug("Failed to kill job %s. CE(?) not reachable?" % jobID)
+      jobs.append(self.__getARCJob(jobID))
+
+    # JobSupervisor is able to aggregate jobs to perform bulk operations and thus minimizes the communication overhead
+    # We still need to create chunks to avoid timeout in the case there are too many jobs to supervise
+    for chunk in breakListIntoChunks(jobs, 100):
+      job_supervisor = arc.JobSupervisor(self.usercfg, chunk)
+      if not job_supervisor.Cancel():
+        errorString = ' - '.join(jobList).strip()
+        return S_ERROR('Failed to kill at least one of these jobs: %s. CE(?) not reachable?' % errorString)
 
     return S_OK()
 
@@ -332,16 +341,26 @@ class ARCComputingElement(ComputingElement):
     else:
       # The system which works properly at present for ARC CEs that are configured correctly.
       # But for this we need the VO to be known - ask me (Raja) for the whole story if interested.
-      cmd = 'ldapsearch -x -LLL -H ldap://%s:2135 -b mds-vo-name=resource,o=grid "(GlueVOViewLocalID=%s)"' % (
-          self.ceHost, vo.lower())
-      res = shellCall(0, cmd)
+      # cmd = 'ldapsearch -x -LLL -H ldap://%s:2135 -b mds-vo-name=resource,o=grid "(GlueVOViewLocalID=%s)"' % (
+      #     self.ceHost, vo.lower())
+      if not self.queue:
+        gLogger.error('ARCComputingElement: No queue ...')
+        res = S_ERROR('Unknown queue (%s) failure for site %s' % (self.queue, self.ceHost))
+        return res
+      cmd1 = "ldapsearch -x -o ldif-wrap=no -LLL -h %s:2135  -b \'o=glue\' " % self.ceHost
+      cmd2 = '"(&(objectClass=GLUE2MappingPolicy)(GLUE2PolicyRule=vo:%s))"' % vo.lower()
+      cmd3 = ' | grep GLUE2MappingPolicyShareForeignKey | grep %s' % (self.queue.split("-")[-1])
+      cmd4 = ' | sed \'s/GLUE2MappingPolicyShareForeignKey: /GLUE2ShareID=/\' '
+      cmd5 = ' | xargs -L1 ldapsearch -x -o ldif-wrap=no -LLL -h %s:2135 -b \'o=glue\' ' % self.ceHost
+      cmd6 = ' | egrep \'(ShareWaiting|ShareRunning)\''
+      res = shellCall(0, cmd1 + cmd2 + cmd3 + cmd4 + cmd5 + cmd6)
       if not res['OK']:
         gLogger.debug("Could not query CE %s - is it down?" % self.ceHost)
         return res
       try:
         ldapValues = res['Value'][1].split("\n")
-        running = [lValue for lValue in ldapValues if 'GlueCEStateRunningJobs' in lValue]
-        waiting = [lValue for lValue in ldapValues if 'GlueCEStateWaitingJobs' in lValue]
+        running = [lValue for lValue in ldapValues if 'GLUE2ComputingShareRunningJobs' in lValue]
+        waiting = [lValue for lValue in ldapValues if 'GLUE2ComputingShareWaitingJobs' in lValue]
         result['RunningJobs'] = int(running[0].split(":")[1])
         result['WaitingJobs'] = int(waiting[0].split(":")[1])
       except IndexError:
@@ -374,11 +393,24 @@ class ARCComputingElement(ComputingElement):
         job = j
       jobList.append(job)
 
-    resultDict = {}
+    jobs = []
     for jobID in jobList:
+      jobs.append(self.__getARCJob(jobID))
+
+    # JobSupervisor is able to aggregate jobs to perform bulk operations and thus minimizes the communication overhead
+    # We still need to create chunks to avoid timeout in the case there are too many jobs to supervise
+    jobsUpdated = []
+    for chunk in breakListIntoChunks(jobs, 100):
+      job_supervisor = arc.JobSupervisor(self.usercfg, chunk)
+      job_supervisor.Update()
+      jobsUpdated.extend(job_supervisor.GetAllJobs())
+
+    resultDict = {}
+    jobsToRenew = []
+    jobsToCancel = []
+    for job in jobsUpdated:
+      jobID = job.JobID
       gLogger.debug("Retrieving status for job %s" % jobID)
-      job = self.__getARCJob(jobID)
-      job.Update()
       arcState = job.State.GetGeneralState()
       gLogger.debug("ARC status for job %s is %s" % (jobID, arcState))
       if arcState:  # Meaning arcState is filled. Is this good python?
@@ -387,12 +419,14 @@ class ARCComputingElement(ComputingElement):
         if arcState in ("Running", "Queuing"):
           nearExpiry = arc.Time() + arc.Period(10000)  # 2 hours, 46 minutes and 40 seconds
           if job.ProxyExpirationTime < nearExpiry:
-            job.Renew()
+            # Jobs to renew are aggregated to perform bulk operations
+            jobsToRenew.append(job)
             gLogger.debug("Renewing proxy for job %s whose proxy expires at %s" % (jobID, job.ProxyExpirationTime))
         if arcState == "Hold":
+          # Jobs to cancel are aggregated to perform bulk operations
           # Cancel held jobs so they don't sit in the queue forever
+          jobsToCancel.append(job)
           gLogger.debug("Killing held job %s" % jobID)
-          job.Cancel()
       else:
         resultDict[jobID] = 'Unknown'
       # If done - is it really done? Check the exit code
@@ -401,6 +435,18 @@ class ARCComputingElement(ComputingElement):
         if exitCode:
           resultDict[jobID] = "Failed"
       gLogger.debug("DIRAC status for job %s is %s" % (jobID, resultDict[jobID]))
+
+    # JobSupervisor is able to aggregate jobs to perform bulk operations and thus minimizes the communication overhead
+    # We still need to create chunks to avoid timeout in the case there are too many jobs to supervise
+    for chunk in breakListIntoChunks(jobsToRenew, 100):
+      job_supervisor_renew = arc.JobSupervisor(self.usercfg, chunk)
+      if not job_supervisor_renew.Renew():
+        gLogger.warn('At least one of the jobs failed to renew its credentials')
+
+    for chunk in breakListIntoChunks(jobsToCancel, 100):
+      job_supervisor_cancel = arc.JobSupervisor(self.usercfg, chunk)
+      if not job_supervisor_cancel.Cancel():
+        gLogger.warn('At least one of the jobs failed to be cancelled')
 
     if not resultDict:
       return S_ERROR('No job statuses returned')

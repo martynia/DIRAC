@@ -2,7 +2,9 @@
 ########################################################################
 # $Header:  $
 ########################################################################
-__RCSID__ = "$Id:  $"
+from __future__ import print_function
+
+__RCSID__ = "$Id$"
 
 import DIRAC
 from DIRAC.Core.Base import Script
@@ -54,10 +56,10 @@ else:
 
 res = fc.removeFile( lfns )
 if not res['OK']:
-  print "Error:", res['Message']
+  print("Error:", res['Message'])
   dexit( 1 )
 for lfn in sorted( res['Value']['Failed'].keys() ):
   message = res['Value']['Failed'][lfn]
-  print 'Error: failed to remove %s: %s' % ( lfn, message )
-print 'Successfully removed %d catalog files.' % ( len( res['Value']['Successful'] ) )
+  print('Error: failed to remove %s: %s' % (lfn, message))
+print('Successfully removed %d catalog files.' % (len(res['Value']['Successful'])))
 

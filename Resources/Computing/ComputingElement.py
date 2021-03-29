@@ -26,27 +26,35 @@
      ComputingElementFactory.
 """
 
-import os
-import multiprocessing
+from __future__ import print_function
 
-from DIRAC.ConfigurationSystem.Client.Config import gConfig
+__RCSID__ = "$Id$"
+
+import os
+
+from DIRAC import S_OK, S_ERROR, gLogger, version
+
+from DIRAC.Core.Security import Properties
+from DIRAC.Core.Security.VOMS import VOMS
 from DIRAC.Core.Security.ProxyFile import writeToProxyFile
 from DIRAC.Core.Security.ProxyInfo import getProxyInfoAsString
 from DIRAC.Core.Security.ProxyInfo import formatProxyInfoAsString
 from DIRAC.Core.Security.ProxyInfo import getProxyInfo
-from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
-from DIRAC.Core.Security.VOMS import VOMS
-from DIRAC.ConfigurationSystem.Client.Helpers import Registry
-from DIRAC.Core.Security import Properties
 from DIRAC.Core.Utilities.Time import dateTime, second
-from DIRAC import S_OK, S_ERROR, gLogger, version
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
+from DIRAC.ConfigurationSystem.Client.Config import gConfig
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
+from DIRAC.FrameworkSystem.Client.ProxyManagerClient import gProxyManager
+from DIRAC.WorkloadManagementSystem.Utilities.JobParameters import getNumberOfProcessors
 
+
+INTEGER_PARAMETERS = ['CPUTime',
+                      'NumberOfProcessors', 'NumberOfPayloadProcessors',
+                      'MaxRAM']
+FLOAT_PARAMETERS = ['WaitingToRunningRatio']
 
 __RCSID__ = "$Id$"
 
-INTEGER_PARAMETERS = ['CPUTime', 'NumberOfProcessors']
-FLOAT_PARAMETERS = ['WaitingToRunningRatio']
 LIST_PARAMETERS = ['Tag', 'RequiredTag']
 WAITING_TO_RUNNING_RATIO = 0.5
 MAX_WAITING_JOBS = 1
@@ -75,6 +83,7 @@ class ComputingElement(object):
     self.proxyCheckPeriod = gConfig.getValue('/Registry/ProxyCheckingPeriod', 3600)  # secs
 
     self.initializeParameters()
+    self.log.debug("CE parameters", self.ceParameters)
 
   def setProxy(self, proxy, valid=0):
     """ Set proxy for this instance
@@ -99,7 +108,7 @@ class ComputingElement(object):
         return result
       os.environ['X509_USER_PROXY'] = result['Value']
 
-    gLogger.debug("Set proxy variable X509_USER_PROXY to %s" % os.environ['X509_USER_PROXY'])
+    self.log.debug("Set proxy variable X509_USER_PROXY to %s" % os.environ['X509_USER_PROXY'])
     return S_OK()
 
   def isProxyValid(self, valid=1000):
@@ -122,10 +131,17 @@ class ComputingElement(object):
     """ Initialize the CE parameters after they are collected from various sources
     """
 
+    self.log.debug("Initializing the CE parameters")
+
     # Collect global defaults first
     for section in ['/Resources/Computing/CEDefaults', '/Resources/Computing/%s' % self.ceName]:
       result = gConfig.getOptionsDict(section)
-      if result['OK']:
+
+      self.log.debug(result)
+
+      if not result['OK']:
+        self.log.warn(result['Message'])
+      else:
         ceOptions = result['Value']
         for key in ceOptions:
           if key in INTEGER_PARAMETERS:
@@ -187,7 +203,7 @@ class ComputingElement(object):
     objectLoader = ObjectLoader()
     result = objectLoader.loadObject('Resources.Computing.BatchSystems.%s' % self.batchSystem, self.batchSystem)
     if not result['OK']:
-      gLogger.error('Failed to load batch object: %s' % result['Message'])
+      self.log.error('Failed to load batch object: %s' % result['Message'])
       return result
     batchClass = result['Value']
     self.batchModuleFile = result['ModuleFile']
@@ -214,7 +230,7 @@ class ComputingElement(object):
     # If NumberOfProcessors is present in the description but is equal to zero
     # interpret it as needing local evaluation
     if self.ceParameters.get("NumberOfProcessors", -1) == 0:
-      self.ceParameters["NumberOfProcessors"] = multiprocessing.cpu_count()
+      self.ceParameters["NumberOfProcessors"] = getNumberOfProcessors()
 
     for key in ceOptions:
       if key in INTEGER_PARAMETERS:
@@ -225,11 +241,6 @@ class ComputingElement(object):
     self._reset()
     return S_OK()
 
-  def getParameterDict(self):
-    """  Get the CE complete parameter dictionary
-    """
-    return self.ceParameters
-
   #############################################################################
   def setCPUTimeLeft(self, cpuTimeLeft=None):
     """Update the CPUTime parameter of the CE classAd, necessary for running in filling mode
@@ -239,12 +250,10 @@ class ComputingElement(object):
       return S_OK()
     try:
       intCPUTimeLeft = int(cpuTimeLeft)
+      self.ceParameters['CPUTime'] = intCPUTimeLeft
+      return S_OK(intCPUTimeLeft)
     except ValueError:
       return S_ERROR('Wrong type for setCPUTimeLeft argument')
-
-    self.ceParameters['CPUTime'] = intCPUTimeLeft
-
-    return S_OK(intCPUTimeLeft)
 
   #############################################################################
   def available(self, jobIDList=None):
@@ -265,7 +274,7 @@ class ComputingElement(object):
     else:
       result = self.ceParameters.get('CEType')
       if result and result == 'CREAM':
-        result = self.getCEStatus(jobIDList)
+        result = self.getCEStatus(jobIDList)  # pylint: disable=too-many-function-args
       else:
         result = self.getCEStatus()
       if not result['OK']:
@@ -334,16 +343,31 @@ class ComputingElement(object):
       return result
     else:
       self.log.info('Payload proxy information:')
-      print result['Value']
+      print(result['Value'])
 
     return S_OK(proxyLocation)
 
   #############################################################################
-  def _monitorProxy(self, pilotProxy, payloadProxy):
+  def _monitorProxy(self, payloadProxy=None):
     """Base class for the monitor and update of the payload proxy, to be used in
       derived classes for the basic renewal of the proxy, if further actions are
       necessary they should be implemented there
+
+      :param str payloadProxy: location of the payload proxy file
+
+      :returns: S_OK(filename)/S_ERROR
     """
+    if not payloadProxy:
+      return S_ERROR("No payload proxy")
+
+    # This will get the pilot proxy
+    ret = getProxyInfo()
+    if not ret['OK']:
+      pilotProxy = None
+    else:
+      pilotProxy = ret['Value']['path']
+      self.log.notice('Pilot Proxy:', pilotProxy)
+
     retVal = getProxyInfo(payloadProxy)
     if not retVal['OK']:
       self.log.error('Could not get payload proxy info', retVal)
@@ -423,7 +447,9 @@ class ComputingElement(object):
     return chain.dumpAllToFile(payloadProxy)
 
   def getDescription(self):
-    """ Get CE description as a dictionary
+    """ Get CE description as a dictionary.
+
+        This is called by the JobAgent for the case of "inner" CEs.
     """
 
     ceDict = {}
@@ -447,11 +473,14 @@ class ComputingElement(object):
     if project:
       ceDict['ReleaseProject'] = project
 
+    # the getCEStatus is implemented in each of the specific CE classes
     result = self.getCEStatus()
     if result['OK']:
-      if 'AvailableProcessors' in result:
-        cores = result['AvailableProcessors']
-        ceDict['NumberOfProcessors'] = cores
+      ceDict['NumberOfProcessors'] = result.get('AvailableProcessors',
+                                                result.get('NumberOfProcessors', 1))
+    else:
+      self.log.error("Failure getting CE status",
+                     "(we keep going without the number of waiting and running pilots/jobs)")
 
     return S_OK(ceDict)
 
@@ -459,7 +488,7 @@ class ComputingElement(object):
   def sendOutput(self, stdid, line):  # pylint: disable=unused-argument, no-self-use
     """ Callback function such that the results from the CE may be returned.
     """
-    print line
+    print(line)
 
   #############################################################################
   def submitJob(self, executableFile, proxy, dummy=None, processors=1):  # pylint: disable=unused-argument
@@ -470,7 +499,7 @@ class ComputingElement(object):
     return S_ERROR('ComputingElement: %s should be implemented in a subclass' % (name))
 
   #############################################################################
-  def getCEStatus(self, jobIDList=None):  # pylint: disable=unused-argument
+  def getCEStatus(self):
     """ Method to get dynamic job information, can be overridden in sub-class.
     """
     name = 'getCEStatus()'

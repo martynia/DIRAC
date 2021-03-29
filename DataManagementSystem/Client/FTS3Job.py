@@ -8,7 +8,9 @@ import errno
 
 # Requires at least version 3.3.3
 import fts3.rest.client.easy as fts3
-from fts3.rest.client.exceptions import FTS3ClientException
+from fts3.rest.client.exceptions import FTS3ClientException, NotFound
+# We specifically use Request in the FTS client because of a leak in the
+# default pycurl. See https://its.cern.ch/jira/browse/FTS-261
 from fts3.rest.client.request import Request as ftsSSLRequest
 
 from DIRAC.Resources.Storage.StorageElement import StorageElement
@@ -18,14 +20,14 @@ from DIRAC.FrameworkSystem.Client.Logger import gLogger
 from DIRAC.Core.Utilities.ReturnValues import S_OK, S_ERROR
 from DIRAC.Core.Utilities.DErrno import cmpError
 
-from DIRAC.DataManagementSystem.private.FTS3Utilities import FTS3Serializable
+from DIRAC.Core.Utilities.JEncode import JSerializable
 from DIRAC.DataManagementSystem.Client.FTS3File import FTS3File
 
 # 3 days in seconds
 BRING_ONLINE_TIMEOUT = 259200
 
 
-class FTS3Job(FTS3Serializable):
+class FTS3Job(JSerializable):
   """ Abstract class to represent a job to be executed by FTS. It belongs
       to an FTS3Operation
   """
@@ -83,7 +85,11 @@ class FTS3Job(FTS3Serializable):
     self.accountingDict = None
 
   def monitor(self, context=None, ftsServer=None, ucert=None):
-    """ Queries the fts server to monitor the job
+    """ Queries the fts server to monitor the job.
+        The internal state of the object is updated depending on the
+        monitoring result.
+
+        In case the job is not found on the server, the status is set to 'Failed'
 
         This method assumes that the attribute self.ftsGUID is set
 
@@ -93,7 +99,14 @@ class FTS3Job(FTS3Serializable):
 
         :param ucert: path to the user certificate/proxy. Might be infered by the fts cli (see its doc)
 
-        :returns {FileID: { status, error } }
+        :returns: {FileID: { status, error } }
+
+                  Possible error numbers
+
+                  * errno.ESRCH: If the job does not exist on the server
+                  * errno.EDEADLK: In case the job and file status are inconsistent (see comments inside the code)
+
+
     """
 
     if not self.ftsGUID:
@@ -111,6 +124,11 @@ class FTS3Job(FTS3Serializable):
     jobStatusDict = None
     try:
       jobStatusDict = fts3.get_job_status(context, self.ftsGUID, list_files=True)
+    # The job is not found
+    # Set its status to Failed and return
+    except NotFound:
+      self.status = 'Failed'
+      return S_ERROR(errno.ESRCH, "FTSGUID %s not found on %s" % (self.ftsGUID, self.ftsServer))
     except FTS3ClientException as e:
       return S_ERROR("Error getting the job status %s" % e)
 
@@ -160,16 +178,16 @@ class FTS3Job(FTS3Serializable):
     return S_OK(filesStatus)
 
   @staticmethod
-  def __fetchSpaceToken(seName):
+  def __fetchSpaceToken(seName, vo):
     """ Fetch the space token of storage element
 
-        :param seName name of the storageElement
-
-        :returns space token. If there is no SpaceToken defined, returns None
+        :param seName: name of the storageElement
+        :param vo: vo of the job
+        :returns: space token. If there is no SpaceToken defined, returns None
     """
     seToken = None
     if seName:
-      seObj = StorageElement(seName)
+      seObj = StorageElement(seName, vo=vo)
 
       res = seObj.getStorageParameters(protocol='srm')
       if not res['OK']:
@@ -185,18 +203,18 @@ class FTS3Job(FTS3Serializable):
     return S_OK(seToken)
 
   @staticmethod
-  def __isTapeSE(seName):
+  def __isTapeSE(seName, vo):
     """ Check whether a given SE is a tape storage
 
-        :param seName name of the storageElement
-
-        :returns True/False
-                 In case of error, returns True.
-                 It is better to loose a bit of time on the FTS
-                 side, rather than failing jobs because the FTS default
-                 pin time is too short
+        :param seName: name of the storageElement
+        :param vo: VO of the job
+        :returns: True/False
+                  In case of error, returns True.
+                  It is better to lose a bit of time on the FTS
+                  side, rather than failing jobs because the FTS default
+                  pin time is too short
     """
-    isTape = StorageElement(seName).getStatus()\
+    isTape = StorageElement(seName, vo=vo).getStatus()\
         .get('Value', {})\
         .get('TapeSE', True)
 
@@ -227,7 +245,7 @@ class FTS3Job(FTS3Serializable):
         "constructTransferJob/%s/%s_%s" %
         (self.operationID, self.sourceSE, self.targetSE), True)
 
-    res = self.__fetchSpaceToken(self.sourceSE)
+    res = self.__fetchSpaceToken(self.sourceSE, self.vo)
     if not res['OK']:
       return res
     source_spacetoken = res['Value']
@@ -279,7 +297,7 @@ class FTS3Job(FTS3Serializable):
     # If the source is not an tape SE, we should set the
     # copy_pin_lifetime and bring_online params to None,
     # otherwise they will do an extra useless queue in FTS
-    sourceIsTape = self.__isTapeSE(self.sourceSE)
+    sourceIsTape = self.__isTapeSE(self.sourceSE, self.vo)
     copy_pin_lifetime = pinTime if sourceIsTape else None
     bring_online = BRING_ONLINE_TIMEOUT if sourceIsTape else None
 
@@ -417,7 +435,7 @@ class FTS3Job(FTS3Serializable):
     # If the source is not an tape SE, we should set the
     # copy_pin_lifetime and bring_online params to None,
     # otherwise they will do an extra useless queue in FTS
-    sourceIsTape = self.__isTapeSE(self.sourceSE)
+    sourceIsTape = self.__isTapeSE(self.sourceSE, self.vo)
     copy_pin_lifetime = pinTime if sourceIsTape else None
     bring_online = 86400 if sourceIsTape else None
 
@@ -466,7 +484,7 @@ class FTS3Job(FTS3Serializable):
         :param ucert: path to the user certificate/proxy. Might be inferred by the fts cli (see its doc)
         :param protocols: list of protocols from which we should choose the protocol to use
 
-        :returns S_OK([FTSFiles ids of files submitted])
+        :returns: S_OK([FTSFiles ids of files submitted])
     """
 
     log = gLogger.getSubLogger("submit/%s/%s_%s" %
@@ -482,7 +500,7 @@ class FTS3Job(FTS3Serializable):
           verify=False)
 
     # Construct the target SURL
-    res = self.__fetchSpaceToken(self.targetSE)
+    res = self.__fetchSpaceToken(self.targetSE, self.vo)
     if not res['OK']:
       return res
     target_spacetoken = res['Value']
@@ -545,11 +563,13 @@ class FTS3Job(FTS3Serializable):
     return S_OK(fileIDsInTheJob)
 
   @staticmethod
-  def generateContext(ftsServer, ucert):
+  def generateContext(ftsServer, ucert, lifetime=25200):
     """ This method generates an fts3 context
 
         :param ftsServer: address of the fts3 server
         :param ucert: the path to the certificate to be used
+        :param lifetime: duration (in sec) of the delegation to the FTS3 server
+                        (default is 7h, like FTS3 default)
 
         :returns: an fts3 context
     """
@@ -559,6 +579,22 @@ class FTS3Job(FTS3Serializable):
           ucert=ucert,
           request_class=ftsSSLRequest,
           verify=False)
+
+      # Explicitely delegate to be sure we have the lifetime we want
+      # Note: the delegation will re-happen only when the FTS server
+      # decides that there is not enough timeleft.
+      # At the moment, this is 1 hour, which effectively means that if you do
+      # not submit a job for more than 1h, you have no valid proxy in FTS servers
+      # anymore. In future release of FTS3, the delegation will be triggered when
+      # one third of the lifetime will be left.
+      # Also, the proxy given as parameter might have less than "lifetime" left
+      # since it is cached, but it does not matter, because in the FTS3Agent
+      # we make sure that we renew it often enough
+      # Finally, FTS3 has an issue with handling the lifetime of the proxy,
+      # because it does not check all the chain. This is under discussion
+      # https://its.cern.ch/jira/browse/FTS-1575
+      fts3.delegate(context, lifetime=datetime.timedelta(seconds=lifetime))
+
       return S_OK(context)
     except FTS3ClientException as e:
       gLogger.exception("Error generating context", repr(e))

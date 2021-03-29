@@ -98,6 +98,8 @@ class LocalConfiguration(object):
                         self.__setUseCertByCmd)
     self.registerCmdOpt("d", "debug", "Set debug mode (-ddd is extra debug)",
                         self.__setDebugMode)
+    self.registerCmdOpt("", "cfg=", "Load additional config file",
+                        None)
     devLoader = Devloader()
     if devLoader.enabled:
       self.registerCmdOpt("", "autoreload", "Automatically restart if there's any change in the module",
@@ -255,25 +257,45 @@ class LocalConfiguration(object):
       gLogger.fatal("Error when parsing command line arguments: %s" % str(x))
       self.showHelp(exitCode=2)
 
-    for o, _ in opts:
-      if o in ('-h', '--help'):
+    for opt, val in opts:
+      if opt in ('-h', '--help'):
         self.showHelp()
         sys.exit(2)
+      if opt == '--cfg':
+        self.cliAdditionalCFGFiles.append(os.path.expanduser(val))
 
-    self.cliAdditionalCFGFiles = [arg for arg in args if arg[-4:] == ".cfg"]
-    self.commandArgList = [arg for arg in args if not arg[-4:] == ".cfg"]
+    # environment variable to ensure smooth transition
+    if os.getenv("DIRAC_NO_CFG", None):
+      self.commandArgList = args
+    else:
+      # to avoid issuing the warning for correctly passed cfg files
+      extraCfg = [os.path.expanduser(arg) for arg in args if arg.endswith(".cfg")]
+      self.cliAdditionalCFGFiles.extend(extraCfg)
+      self.commandArgList = [arg for arg in args if not arg.endswith(".cfg")]
+      if extraCfg:
+        # use error level to make sure users will always see the Warning
+        gLogger.error("""WARNING: Parsing of '.cfg' files as command line arguments is changing!
+          Set the environment variable 'export DIRAC_NO_CFG=1' to pass the file as a positional
+          argument (this will become the default).
+          To modify the local configuration use '--cfg <configfile>' instead.""")
+        if os.environ.get("DIRAC_DEPRECATED_FAIL", None):
+          raise NotImplementedError("ERROR: using deprecated config file passing option.")
     self.parsedOptionList = opts
     self.isParsed = True
 
   def __loadCFGFiles(self):
     """
-    Load ~/.dirac.cfg
-    Load cfg files specified in addCFGFile calls
-    Load cfg files with come from the command line
+    Loads possibly several cfg files, in order:
+    1. ~/.dirac.cfg
+    2. cfg files pointed by DIRACSYSCONFIG env variable (comma-separated)
+    3. cfg files specified in addCFGFile calls
+    4. cfg files that come from the command line
     """
     errorsList = []
     if 'DIRACSYSCONFIG' in os.environ:
-      gConfigurationData.loadFile(os.environ['DIRACSYSCONFIG'])
+      diracSysConfigFiles = os.environ['DIRACSYSCONFIG'].replace(' ', '').split(',')
+      for diracSysConfigFile in reversed(diracSysConfigFiles):
+        gConfigurationData.loadFile(diracSysConfigFile)
     gConfigurationData.loadFile(os.path.expanduser("~/.dirac.cfg"))
     for fileName in self.additionalCFGFiles:
       gLogger.debug("Loading file %s" % fileName)

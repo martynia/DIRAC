@@ -147,6 +147,7 @@
 
 """
 
+from __future__ import print_function
 import collections
 import time
 import threading
@@ -646,8 +647,6 @@ class MySQL(object):
     try:
       cursor = connection.cursor()
       res = cursor.execute(cmd)
-      # connection.commit()
-      # self.log.debug('_update:', res)
       retDict = S_OK(res)
       if cursor.lastrowid:
         retDict['lastRowId'] = cursor.lastrowid
@@ -879,18 +878,11 @@ class MySQL(object):
             cmdList.append('FOREIGN KEY ( `%s` ) REFERENCES `%s` ( `%s` )'
                            ' ON DELETE RESTRICT' % (key, forTable, forKey))
 
-        if 'Engine' in thisTable:
-          engine = thisTable['Engine']
-        else:
-          engine = 'InnoDB'
-
-        if 'Charset' in thisTable:
-          charset = thisTable['Charset']
-        else:
-          charset = 'latin1'
+        engine = thisTable.get('Engine', 'InnoDB')
+        charset = thisTable.get('Charset', 'latin1')
 
         cmd = 'CREATE TABLE `%s` (\n%s\n) ENGINE=%s DEFAULT CHARSET=%s' % (table, ',\n'.join(cmdList), engine, charset)
-        retDict = self._update(cmd)
+        retDict = self._transaction([cmd])
         if not retDict['OK']:
           return retDict
         # self.log.debug('Table %s created' % table)
@@ -1060,8 +1052,8 @@ class MySQL(object):
     try:
       cond = self.buildCondition(condDict=condDict, older=older, newer=newer, timeStamp=timeStamp,
                                  greater=greater, smaller=smaller)
-    except Exception as x:
-      return S_ERROR(DErrno.EMYSQL, x)
+    except Exception as exc:
+      return S_ERROR(DErrno.EMYSQL, exc)
 
     cmd = 'SELECT  DISTINCT( %s ) FROM %s %s ORDER BY %s' % (attributeName, table, cond, attributeName)
     res = self._query(cmd, connection)
@@ -1073,7 +1065,7 @@ class MySQL(object):
 #############################################################################
   def buildCondition(self, condDict=None, older=None, newer=None,
                      timeStamp=None, orderAttribute=None, limit=False,
-                     greater=None, smaller=None, offset=None):
+                     greater=None, smaller=None, offset=None, useLikeQuery=False):
     """ Build SQL condition statement from provided condDict and other extra check on
         a specified time stamp.
         The conditions dictionary specifies for each attribute one or a List of possible
@@ -1082,6 +1074,7 @@ class MySQL(object):
         that are requested to be >= or < than the corresponding value.
         For compatibility with current usage it uses Exceptions to exit in case of
         invalid arguments
+        For performing LIKE queries use the parameter useLikeQuery=True
     """
     condition = ''
     conjunction = "WHERE"
@@ -1116,10 +1109,16 @@ class MySQL(object):
             raise Exception(retDict['Message'])
           else:
             escapeInValue = retDict['Value'][0]
-            condition = ' %s %s %s = %s' % (condition,
-                                            conjunction,
-                                            attrName,
-                                            escapeInValue)
+            if useLikeQuery:
+              condition = ' %s %s %s LIKE %s' % (condition,
+                                                 conjunction,
+                                                 attrName,
+                                                 escapeInValue)
+            else:
+              condition = ' %s %s %s = %s' % (condition,
+                                              conjunction,
+                                              attrName,
+                                              escapeInValue)
             conjunction = "AND"
 
     if timeStamp:
@@ -1238,7 +1237,7 @@ class MySQL(object):
                 limit=False, conn=None,
                 older=None, newer=None,
                 timeStamp=None, orderAttribute=None,
-                greater=None, smaller=None):
+                greater=None, smaller=None, useLikeQuery=False):
     """
       Select "outFields" from "tableName" with condDict
       N records can match the condition
@@ -1246,6 +1245,7 @@ class MySQL(object):
       if outFields is None all fields in "tableName" are returned
       if limit is not False, the given limit is set
       inValues are properly escaped using the _escape_string method, they can be single values or lists of values.
+      if useLikeQuery=True, then conDict can return matched rows if "%" is defined inside conDict.
     """
     table = _quotedList([tableName])
     if not table:
@@ -1275,7 +1275,7 @@ class MySQL(object):
         myoffset = None
       condition = self.buildCondition(condDict=condDict, older=older, newer=newer,
                                       timeStamp=timeStamp, orderAttribute=orderAttribute, limit=mylimit,
-                                      greater=greater, smaller=smaller, offset=myoffset)
+                                      greater=greater, smaller=smaller, offset=myoffset, useLikeQuery=useLikeQuery)
     except Exception as x:
       return S_ERROR(DErrno.EMYSQL, x)
 

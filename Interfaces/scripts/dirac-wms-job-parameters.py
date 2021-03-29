@@ -7,6 +7,7 @@
   Retrieve parameters associated to the given DIRAC job
 """
 
+from __future__ import print_function
 __RCSID__ = "$Id$"
 
 import DIRAC
@@ -36,10 +37,8 @@ for job in parseArguments(args):
   if not result['OK']:
     errorList.append((job, result['Message']))
     exitCode = 2
-  else:
-    gLogger.notice(result['Value'])
 
 for error in errorList:
-  print "ERROR %s: %s" % error
+  print("ERROR %s: %s" % error)
 
 DIRAC.exit(exitCode)
