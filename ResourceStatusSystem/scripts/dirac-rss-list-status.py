@@ -99,9 +99,9 @@ def getElements():
   meta = {'columns': []}
   for key in ('name', 'statusType', 'status', 'elementType', 'tokenOwner', 'VO'):
     # Transforms from upper lower case to lower upper case
-#    if switchDict[key[0].lower() + key[1:]] is None:
+    #    if switchDict[key[0].lower() + key[1:]] is None:
     if switchDict[key] is None:
-      meta['columns'].append(key[0].upper()+key[1:])
+      meta['columns'].append(key[0].upper() + key[1:])
 
   elements = rssClient.selectStatusElement(
       switchDict['element'], 'Status',
@@ -131,7 +131,7 @@ def tabularPrint(elementsList):
     #keyT = key[0].lower() + key[1:]
 
     if switchDict[key] is None:
-      titles.append(key[0].upper()+key[1:])
+      titles.append(key[0].upper() + key[1:])
     else:
       subLogger.notice('  %s: %s' % (key.ljust(15), switchDict[key]))
   subLogger.notice('')

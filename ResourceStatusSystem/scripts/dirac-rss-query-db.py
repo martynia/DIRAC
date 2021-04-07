@@ -47,6 +47,7 @@ def registerSwitches():
       ('reason=', 'Decision that triggered the assigned status'),
       ('lastCheckTime=', 'Time-stamp setting last time the status & status were checked'),
       ('tokenOwner=', 'Owner of the token ( to specify only with select/delete queries'),
+      ('VO=', 'Virtual organisation; None if default')
   )
 
   for switch in switches:
@@ -92,6 +93,7 @@ def parseSwitches():
   switches.setdefault('reason', None)
   switches.setdefault('lastCheckTime', None)
   switches.setdefault('tokenOwner', None)
+  switches.setdefault('VO', None)
 
   if 'status' in switches and switches['status'] is not None:
     switches['status'] = switches['status'].title()
@@ -277,7 +279,7 @@ def select(args, switchDict):
   rssClient = ResourceStatusClient.ResourceStatusClient()
 
   meta = {'columns': ['name', 'statusType', 'status', 'elementType', 'reason',
-                      'dateEffective', 'lastCheckTime', 'tokenOwner', 'tokenExpiration']}
+                      'dateEffective', 'lastCheckTime', 'tokenOwner', 'tokenExpiration', 'vO']}
 
   result = {'output': None, 'successful': None, 'message': None, 'match': None}
   output = rssClient.selectStatusElement(element=args[1].title(),
@@ -288,6 +290,7 @@ def select(args, switchDict):
                                          elementType=switchDict['elementType'],
                                          lastCheckTime=switchDict['lastCheckTime'],
                                          tokenOwner=switchDict['tokenOwner'],
+                                         vO=switchDict['VO'],
                                          meta=meta)
   result['output'] = [dict(zip(output['Columns'], e)) for e in output['Value']]
   result['output'] = filterReason(result['output'], switchDict['reason'])
@@ -316,7 +319,8 @@ def add(args, switchDict):
                                               elementType=switchDict['elementType'],
                                               reason=switchDict['reason'],
                                               tokenOwner=getToken('owner'),
-                                              tokenExpiration=getToken('expiration'))
+                                              tokenExpiration=getToken('expiration'),
+                                              vO=switchDict['VO'])
 
   if output.get('Value'):
     result['match'] = int(output['Value'] if output['Value'] else 0)
@@ -343,7 +347,8 @@ def modify(args, switchDict):
                                          elementType=switchDict['elementType'],
                                          reason=switchDict['reason'],
                                          tokenOwner=getToken('owner'),
-                                         tokenExpiration=getToken('expiration')
+                                         tokenExpiration=getToken('expiration'),
+                                         vO=switchDict['VO']
                                          )
 
   if output.get('Value'):
@@ -370,7 +375,8 @@ def delete(args, switchDict):
                                          status=switchDict['status'],
                                          elementType=switchDict['elementType'],
                                          reason=switchDict['reason'],
-                                         tokenOwner=switchDict['tokenOwner'])
+                                         tokenOwner=switchDict['tokenOwner'],
+                                         vO=switchDict['VO'])
 
   if 'Value' in output:
     result['match'] = int(output['Value'] if output['Value'] else 0)

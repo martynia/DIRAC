@@ -133,8 +133,8 @@ def setToken(user):
   # If there list is empty they do not exist on the DB !
   if not elements:
     subLogger.warn('Nothing found for %s, %s, %s %s' % (switchDict['element'],
-                                                     switchDict['name'], switchDict['VO'],
-                                                     switchDict['statusType']))
+                                                        switchDict['name'], switchDict['VO'],
+                                                        switchDict['statusType']))
     return S_OK()
 
   # If we want to release the token
