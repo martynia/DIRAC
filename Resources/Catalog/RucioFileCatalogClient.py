@@ -15,6 +15,8 @@ from DIRAC                                              import S_OK, S_ERROR, gL
 from DIRAC.Resources.Catalog.Utilities                  import checkCatalogArguments
 from DIRAC.Core.Utilities.List                          import breakListIntoChunks
 from DIRAC.Core.Security.ProxyInfo                      import getProxyInfo
+from DIRAC.Core.Security import Locations
+from DIRAC.Core.Security import ProxyInfo
 from DIRAC.Resources.Catalog.FileCatalogClientBase import FileCatalogClientBase
 
 from rucio.client import Client
@@ -62,13 +64,22 @@ class RucioFileCatalogClient(FileCatalogClientBase):
     """
     self.convertUnicode = True
     proxyInfo = {'OK': False}
+    rucioHost = options.get('RucioHost', None)
+    authHost = options.get('AuthHost', None)
+    # giving ourselves a chance to have a VO-wide Rucio account, mainly for testing.
+    account = options.get('RucioAccount', None)
+    # CA location
+    caCertPath = Locations.getCAsLocation()
+    # VO
+    vo = ProxyInfo.getVOfromProxyGroup().get('Value', None)
+
     if os.getenv('RUCIO_AUTH_TYPE') == 'x509_proxy' and not os.getenv('X509_USER_PROXY'):
       proxyInfo = getProxyInfo(disableVOMS=True)
       if proxyInfo['OK']:
         os.environ['X509_USER_PROXY'] = proxyInfo['Value']['path']
         sLog.debug('X509_USER_PROXY not defined. Using %s' % proxyInfo['Value']['path'])
     try:
-      self._client = Client()
+      self._client = Client(rucio_host=rucioHost, auth_host=authHost, account=account, ca_cert=caCertPath, vo=vo)
       self.account = self._client.account
     except (CannotAuthenticate, MissingClientParameter):
       if os.getenv('RUCIO_AUTH_TYPE') == 'x509_proxy':
@@ -81,7 +92,7 @@ class RucioFileCatalogClient(FileCatalogClientBase):
           sLog.debug('Switching to account %s mapped to proxy %s' %(username, dn))
 
     try:
-      self._client = Client(account=self.account)
+      self._client = Client(rucio_host=rucioHost, auth_host=authHost, account=self.account, ca_cert=caCertPath, vo=vo)
       self.scopes = self._client.list_scopes()
     except Exception as err:
         sLog.error('Cannot instantiate RucioFileCatalog interface', 'error : %s' % repr(err))
