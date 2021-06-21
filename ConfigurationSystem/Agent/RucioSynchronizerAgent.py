@@ -53,7 +53,7 @@ def getStorageElements(vo):
 
     read_protocols = {}
     protocols = se.options.get('AccessProtocols')
-    log.debug("AccessProtocols for  %s VO " % vo, protocols)
+    log.debug("Global AccessProtocols for  %s VO: " % vo, protocols)
     if not protocols:
       protocols = dms.getAccessProtocols()
       if not protocols:
@@ -194,9 +194,11 @@ class RucioSynchronizerAgent(AgentModule):
       return S_ERROR(message)
 
   def executeForVO(self, vo):
-    """ execution in one agent's cycle
+    """
+    Execute one SE and user synchronisation cycle for a VO.
 
-    :param self: self reference
+    :param vo: Virtual organisation name.
+    :return: S_OK or S_ERROR
     """
 
     valid_protocols = ['srm', 'gsiftp', 'davs', 'https', 'root']
@@ -407,7 +409,7 @@ class RucioSynchronizerAgent(AgentModule):
               pass
             except Exception as err:
               self.log.error('Cannot remove RSE attribute PrimaryDataSE for %s : %s' % (rse, str(err)))
-      self.log.info("RSEs synchronized")
+      self.log.info("RSEs synchronized for VO: ", vo)
       return S_OK()
       # Collect the user accounts from Dirac Configuration and create user accounts in Rucio
       self.log.info("Synchronizing accounts")
@@ -419,16 +421,16 @@ class RucioSynchronizerAgent(AgentModule):
         email = getUserOption(account, 'Email')
         dnMapping[dn] = email
         if account not in listAccounts:
-          self.log.info('Will create %s with associated DN %s', account, dn)
+          self.log.info('Will create %s with associated DN %s' % (account, dn))
           try:
             client.add_account(account=account, type='USER', email=email)
             listAccounts.append(account)
           except Exception as err:
-            self.log.error('Cannot create account %s : %s', account, str(err))
+            self.log.error('Cannot create account %s : %s' % (account, str(err)))
           try:
             client.add_identity(account=account, identity=dn, authtype='X509', email=email, default=True)
           except Exception as err:
-            self.log.error('Cannot create account %s : %s', account, str(err))
+            self.log.error('Cannot create account %s : %s' % (account, str(err)))
           for rse in rses:
             client.set_local_account_limit(account, rse, 1000000000000000)
         else:
@@ -437,7 +439,7 @@ class RucioSynchronizerAgent(AgentModule):
           except Duplicate:
             pass
           except Exception as err:
-            self.log.error('Cannot create identity %s for account %s : %s', dn, account, str(err))
+            self.log.error('Cannot create identity %s for account %s : %s' % (dn, account, str(err)))
         scope = 'user.' + account
         if scope not in listScopes:
           try:
@@ -445,13 +447,13 @@ class RucioSynchronizerAgent(AgentModule):
             client.add_scope(account, scope)
             self.log.info('Scope %s successfully added', scope)
           except Exception as err:
-            self.log.error('Cannot create scope %s : %s', scope, str(err))
+            self.log.error('Cannot create scope %s : %s' % (scope, str(err)))
 
       # Collect the group accounts from Dirac Configuration and create service accounts in Rucio
       groups = getAllGroups()
       for group in groups:
         if group not in listAccounts:
-          self.log.info('Will create SERVICE account %s' % (group))
+          self.log.info('Will create SERVICE account %s for Dirac group: ' % group)
           try:
             client.add_account(account=group, type='SERVICE', email=None)
             listAccounts.append(group)
