@@ -370,7 +370,7 @@ class RucioSynchronizerAgent(AgentModule):
           rseDict = result['Value']
           for rse in rses:
             try:
-              self.log.info('Setting %sShare for %s : %s', dataLevel, rse, rseDict.get(rse, 0))
+              self.log.info('Setting %sShare for %s : %s' % (dataLevel, rse, rseDict.get(rse, 0)))
               client.add_rse_attribute(rse, '%sShare' % dataLevel, rseDict.get(rse, 0))
             except Exception as err:
               self.log.error('Cannot create %sShare for %s', dataLevel, rse)
