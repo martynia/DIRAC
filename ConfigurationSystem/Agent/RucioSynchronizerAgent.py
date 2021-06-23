@@ -18,7 +18,8 @@ from DIRAC import S_OK, S_ERROR,  gLogger, gConfig
 from DIRAC.Core.Security import Locations
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import (getUserOption, getAllUsers, getHosts, getVOs,
-                                                               getHostOption, getAllGroups, getDNsInGroup)
+                                                               getHostOption, getAllGroups, getDNsInGroup,
+                                                               getUsersInVO, getGroupsForVO)
 from DIRAC.Core.Base.AgentModule import AgentModule
 from DIRAC.DataManagementSystem.Utilities.DMSHelpers import DMSHelpers, resolveSEGroup
 from DIRAC.Resources.Storage.StorageElement import StorageElement
@@ -410,12 +411,22 @@ class RucioSynchronizerAgent(AgentModule):
             except Exception as err:
               self.log.error('Cannot remove RSE attribute PrimaryDataSE for %s : %s' % (rse, str(err)))
       self.log.info("RSEs synchronized for VO: ", vo)
-      return S_OK()
+      #return S_OK()
       # Collect the user accounts from Dirac Configuration and create user accounts in Rucio
       self.log.info("Synchronizing accounts")
       listAccounts = [str(acc['account']) for acc in client.list_accounts()]
       listScopes = [str(scope) for scope in client.list_scopes()]
       dnMapping = {}
+      diracUsers = getUsersInVO(vo)
+      self.log.debug(" Will consider following Dirac users for %s VO" % vo, diracUsers)
+      result = getGroupsForVO(vo)
+      if result['OK']:
+        groups = result['Value']
+        self.log.debug(" Will consider following Dirac groups for %s VO" % vo, groups)
+      else:
+        groups =[]
+        self.log.debug(" No Dirac groups for %s VO (-> no Rucio service accounts will be created)." % vo)
+      return S_OK()
       for account in getAllUsers():
         dn = getUserOption(account, 'DN')
         email = getUserOption(account, 'Email')
@@ -450,7 +461,7 @@ class RucioSynchronizerAgent(AgentModule):
             self.log.error('Cannot create scope %s : %s' % (scope, str(err)))
 
       # Collect the group accounts from Dirac Configuration and create service accounts in Rucio
-      groups = getAllGroups()
+      groups = getAllGroups() # getGroupsForVO(vo)
       for group in groups:
         if group not in listAccounts:
           self.log.info('Will create SERVICE account %s for Dirac group: ' % group)
