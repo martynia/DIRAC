@@ -53,7 +53,7 @@ from PilotWrapper import pilotWrapperScript  # pylint: disable=import-error
 
 res = pilotWrapperScript(
     pilotOptions="--setup=CI -N ce.dirac.org -Q DIRACQUEUE -n DIRAC.CI.ORG --pythonVersion=3 --debug",
-    location="diracproject.web.cern.ch/diracproject/tars/Pilot/DIRAC/master/,wrong.cern.ch",
+    location="diracproject.web.cern.ch/diracproject/tars/Pilot/DIRAC/devel/,wrong.cern.ch",
 )
 
 with open("pilot-wrapper.sh", "wb") as pj:
