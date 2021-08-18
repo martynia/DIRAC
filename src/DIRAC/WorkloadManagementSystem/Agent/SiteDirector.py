@@ -1014,7 +1014,7 @@ class SiteDirector(AgentModule):
 
         pilotOptions.append("--pythonVersion=3")
 
-        # Debug
+        # Debug. Both for the standard and (if enabled) extended logger.
         if self.pilotLogLevel.lower() == "debug":
             pilotOptions.append("-ddd")
 
