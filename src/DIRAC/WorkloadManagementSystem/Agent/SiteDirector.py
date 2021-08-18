@@ -987,16 +987,19 @@ class SiteDirector(AgentModule):
         else:
             self.log.info("DIRAC project will be installed by pilots")
 
-        # Pilot Logging defined?
+        # Pilot Logging defined? This enables the extended (possibly remote) logger
         pilotLogging = opsHelper.getValue("/Services/JobMonitoring/usePilotsLoggingFlag", False)
         if pilotLogging:
             pilotOptions.append("-z ")
+            # remote logger URL.
+            remoteLoggerURL = opsHelper.getValue("/Services/JobMonitoring/remoteLoggerURL", "localhost")
+            pilotOptions.append("-g %s" % remoteLoggerURL)
 
         # python 3 pilots?
         if self.python3Pilots:
             pilotOptions.append("--pythonVersion=3")
 
-        # Debug
+        # Debug. Both for the standard and (if enabled) extended logger.
         if self.pilotLogLevel.lower() == "debug":
             pilotOptions.append("-ddd")
 
