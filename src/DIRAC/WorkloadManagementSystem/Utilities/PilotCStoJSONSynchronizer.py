@@ -200,7 +200,7 @@ class PilotCStoJSONSynchronizer:
             )
             # pilotDict['Setups'][setup]['CommandExtensions'] = pilotDict['Setups'][setup]['CommandExtensions']
 
-        # Getting the details aboout the MQ Services to be used for logging, if any
+        # Getting the details about the MQ Services to be used for logging, if any
         if "LoggingMQService" in pilotDict["Setups"][setup]:
             loggingMQService = gConfig.getOptionsDict(
                 "/Resources/MQServices/%s" % pilotDict["Setups"][setup]["LoggingMQService"]
@@ -244,6 +244,30 @@ class PilotCStoJSONSynchronizer:
                     return queueOptionRes
                 queuesDict[queue] = queueOptionRes["Value"]
             pilotDict["Setups"][setup]["Logging"]["Queues"] = queuesDict
+        elif "loggingRESTService" in pilotDict["Setups"][setup]:
+            self.log.debug(
+                "Getting option of ",
+                "/DIRAC/Setups/{}/{}".format(setup, pilotDict["Setups"][setup]["loggingRESTService"]),
+            )
+            result = gConfig.getOption(
+                "/DIRAC/Setups/{}/{}".format(setup, pilotDict["Setups"][setup]["loggingRESTService"])
+            )
+            if not result["OK"]:
+                return result
+            optValue = result["Value"]
+            self.log.debug("value: ", optValue)
+            tornadoService = gConfig.getOptionsDict(
+                "/Systems/{}/{}".format(pilotDict["Setups"][setup]["loggingRESTService"], optValue)
+            )
+            if not tornadoService["OK"]:
+                self.log.error(tornadoService["Message"])
+                return tornadoService
+            pilotDict["Setups"][setup]["Logging"] = {"LoggingType": "REST_API"}
+            pilotDict["Setups"][setup]["Logging"]["Port"] = tornadoService["Value"]["Port"]
+            # host ? os.environ.get('HOSTNAME') as a fallback ?
+            pilotDict["Setups"][setup]["Logging"]["Host"] = tornadoService["Value"].get(
+                "Host", os.environ.get("HOSTNAME")
+            )
 
     def syncScripts(self):
         """Clone the pilot scripts from the Pilot repositories (handle also extensions)"""
