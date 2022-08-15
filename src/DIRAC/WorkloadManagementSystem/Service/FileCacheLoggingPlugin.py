@@ -1,5 +1,5 @@
 """
-Basic Pilot logging plugin. Just log messages.
+File cache logging plugin.
 """
 import os, json, re
 from DIRAC import S_OK, S_ERROR, gLogger
@@ -7,7 +7,7 @@ from DIRAC import S_OK, S_ERROR, gLogger
 sLog = gLogger.getSubLogger(__name__)
 
 
-class FileCacheLoggingPlugin(object):
+class FileCacheLoggingPlugin:
     """
     File cache logging. Log records are appended to a file, one for each pilot.
     It is assumed that an agent will be installed together with this plugin, which will copy

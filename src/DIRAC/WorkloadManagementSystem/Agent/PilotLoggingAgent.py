@@ -4,11 +4,13 @@
 """
 
 # # imports
-import os, requests
-from DIRAC import S_OK, S_ERROR
+import os
+from DIRAC import S_OK, S_ERROR, gConfig
+from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.Core.Base.AgentModule import AgentModule
-from DIRAC.Core.Security.Locations import getHostCertificateAndKeyLocation, getCAsLocation
 from DIRAC.DataManagementSystem.Client.DataManager import DataManager
+from DIRAC.WorkloadManagementSystem.Client.TornadoPilotLoggingClient import TornadoPilotLoggingClient
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs
 
 
 class PilotLoggingAgent(AgentModule):
@@ -28,36 +30,28 @@ class PilotLoggingAgent(AgentModule):
         :param self: self reference
         """
 
-        # get shifter proxy for uploads (VO-specific shifter from the Defaults CS section)
-        self.shifterName = self.am_getOption("ShifterName", "GridPPLogManager")
-        self.am_setOption("shifterProxy", self.shifterName)
-        self.uploadSE = self.am_getOption("UploadSE", "UKI-LT2-IC-HEP-disk")
-
-        certAndKeyLocation = getHostCertificateAndKeyLocation()
-        casLocation = getCAsLocation()
-
-        data = {"method": "getMetadata"}
-        self.server = self.am_getOption("DownloadLocation", None)
-
-        if not self.server:
-            return S_ERROR("No DownloadLocation set in the CS !")
-        try:
-            with requests.post(self.server, data=data, verify=casLocation, cert=certAndKeyLocation) as res:
-                if res.status_code not in (200, 202):
-                    message = "Could not get metadata from %s: status %s" % (self.server, res.status_code)
-                    self.log.error(message)
-                    return S_ERROR(message)
-                resDict = res.json()
-        except Exception as exc:
-            message = "Call to server %s failed" % (self.server,)
-            self.log.exception(message, lException=exc)
-            return S_ERROR(message)
-        if resDict["OK"]:
-            meta = resDict["Value"]
-            self.pilotLogPath = meta["LogPath"]
+        # configured VOs and setup
+        res = getVOs()
+        if res["OK"]:
+            self.voList = res.get("Value", [])
         else:
-            return S_ERROR(resDict["Message"])
-        self.log.info("Pilot log files location = %s " % self.pilotLogPath)
+            return S_ERROR(res["Message"])
+
+        if isinstance(self.voList, str):
+            self.voList = [self.voList]
+
+        self.setup = gConfig.getValue("/DIRAC/Setup", None)
+        if self.setup is None:
+            self.log.error("Setup is not defined in the configuration")
+            return S_ERROR("Setup is not defined in the configuration")
+
+        # TODO one shifter only, to be fixed.
+        self.am_setOption("shifterProxy", "GridPPLogManager")
+        return S_OK()
+
+    def beginExecution(self):
+        self.log.info("Begin execution")
+        # self.am_setOption("shifterProxy", "GridPPLogManager")
         return S_OK()
 
     def execute(self):
@@ -66,24 +60,75 @@ class PilotLoggingAgent(AgentModule):
 
         :param self: self reference
         """
+        voRes = {}
+        for vo in self.voList:
+            self.opsHelper = Operations(vo=vo, setup=self.setup)
+            pilotLogging = self.opsHelper.getValue("/Services/JobMonitoring/usePilotsLoggingFlag", False)
+            # is remote pilot logging on for the VO ?
+            if pilotLogging:
+                res = self.executeForVO(vo)
+                if not res["OK"]:
+                    voRes[vo] = res["Message"]
+        if voRes:
+            return S_ERROR("Agent cycle for some VO finished with errors").update(voRes)
+        return S_OK()
 
-        self.log.info("Pilot files upload cycle started.")
+    def executeForVO(self, vo):
+        """
+        Execute one agent cycle for VO
+
+        :param vo: vo enabled for remote pilot logging
+        :type vo: str
+        :return: S_OK or S_ERROR
+        :rtype: dict
+        """
+
+        self.log.info(f"Pilot files upload cycle started for VO: {vo}")
+        uploadSE = self.opsHelper.getValue("/Services/JobMonitoring/UploadSE")
+        if uploadSE is None:
+            return S_ERROR("Upload SE not defined")
+        self.log.info(f"Pilot upload SE: {uploadSE}")
+
+        uploadPath = self.opsHelper.getValue("/Services/JobMonitoring/UploadPath")
+        if uploadPath is None:
+            return S_ERROR(f"Upload path on SE {uploadSE} not defined")
+        self.log.info(f"Pilot upload path: {uploadPath}")
+
+        shifterName = self.opsHelper.getValue("/Services/JobMonitoring/loggingShifterName")
+        if shifterName is None:
+            return S_ERROR(f"Pilot shifter name  {shifterName} not defined")
+        self.log.info(f"Pilot shifter name for logging: {shifterName}")
+        self.am_setOption("shifterProxy", shifterName)
+
+        server = self.opsHelper.getValue("/Services/JobMonitoring/DownloadLocation")
+
+        if server is None:
+            return S_ERROR(f"No DownloadLocation (server) set in the CS for VO: {vo}!")
+        client = TornadoPilotLoggingClient(server, useCertificates=True)
+        resDict = client.getMetadata()
+
+        if not resDict["OK"]:
+            return S_ERROR(resDict["Message"])
+        pilotLogPath = resDict["Value"]["LogPath"]
+        self.log.info(f"Pilot log files location = {pilotLogPath} for VO: {vo}")
+
+        # get finalised (.log) files from Tornado and upload them to the selected SE
+
         files = [
-            f
-            for f in os.listdir(self.pilotLogPath)
-            if os.path.isfile(os.path.join(self.pilotLogPath, f)) and f.endswith("log")
+            f for f in os.listdir(pilotLogPath) if os.path.isfile(os.path.join(pilotLogPath, f)) and f.endswith("log")
         ]
+        if not files:
+            self.log.info("No files to upload for this cycle")
         for elem in files:
-            lfn = os.path.join("/gridpp/pilotlogs/", elem)
-            name = os.path.join(self.pilotLogPath, elem)
-            res = DataManager().putAndRegister(lfn=lfn, fileName=name, diracSE=self.uploadSE, overwrite=True)
+            lfn = os.path.join(uploadPath, elem)
+            name = os.path.join(pilotLogPath, elem)
+            res = DataManager().putAndRegister(lfn=lfn, fileName=name, diracSE=uploadSE, overwrite=True)
             if not res["OK"]:
-                self.log.error("Could not upload", "to %s: %s" % (self.uploadSE, res["Message"]))
+                self.log.error("Could not upload", f"to {uploadSE}: {res['Message']}")
             else:
-                self.log.info("File uploaded: ", "LFN = %s" % res["Value"])
+                self.log.info("File uploaded: ", f"LFN = {res['Value']}")
                 try:
-                    pass
-                    # os.remove(name)
+                    os.remove(name)
                 except Exception as excp:
                     self.log.exception("Cannot remove a local file after uploading", lException=excp)
         return S_OK()

@@ -1,14 +1,7 @@
 """ Tornado-based HTTPs JobMonitoring service.
 """
 
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-__RCSID__ = "$Id$"
-
-import os, json
+import os
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.Core.DISET.RequestHandler import RequestHandler, getServiceOption
