@@ -6,7 +6,7 @@ from DIRAC import S_OK, S_ERROR, gLogger
 sLog = gLogger.getSubLogger(__name__)
 
 
-class BasicPilotLoggingPlugin(object):
+class BasicPilotLoggingPlugin:
     """
     This is a no-op fallback solution class, to be used when no plugin is defined for remote logging.
     Any pilot logger plugin could inherit from this class to receive a set of no-op methods required by
