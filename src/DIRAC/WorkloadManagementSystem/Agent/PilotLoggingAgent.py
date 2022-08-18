@@ -11,6 +11,7 @@ from DIRAC.Core.Base.AgentModule import AgentModule
 from DIRAC.DataManagementSystem.Client.DataManager import DataManager
 from DIRAC.WorkloadManagementSystem.Client.TornadoPilotLoggingClient import TornadoPilotLoggingClient
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs
+from DIRAC.Core.Utilities.Proxy import executeWithUserProxy
 
 
 class PilotLoggingAgent(AgentModule):
@@ -45,13 +46,6 @@ class PilotLoggingAgent(AgentModule):
             self.log.error("Setup is not defined in the configuration")
             return S_ERROR("Setup is not defined in the configuration")
 
-        # TODO one shifter only, to be fixed.
-        self.am_setOption("shifterProxy", "GridPPLogManager")
-        return S_OK()
-
-    def beginExecution(self):
-        self.log.info("Begin execution")
-        # self.am_setOption("shifterProxy", "GridPPLogManager")
         return S_OK()
 
     def execute(self):
@@ -66,13 +60,21 @@ class PilotLoggingAgent(AgentModule):
             pilotLogging = self.opsHelper.getValue("/Services/JobMonitoring/usePilotsLoggingFlag", False)
             # is remote pilot logging on for the VO ?
             if pilotLogging:
-                res = self.executeForVO(vo)
+                res = self.opsHelper.getOptionsDict("/Shifter/DataManager")
+                if not res["OK"]:
+                    voRes[vo] = res["Message"]
+                    continue
+                proxyUser = res["Value"]["User"]
+                proxyGroup = res["Value"]["Group"]
+                self.log.info(f"Proxy used for pilot logging: User: {proxyUser}, Group: {proxyGroup}")
+                res = self.executeForVO(vo, proxyUserName=proxyUser, proxyUserGroup=proxyGroup)
                 if not res["OK"]:
                     voRes[vo] = res["Message"]
         if voRes:
             return S_ERROR("Agent cycle for some VO finished with errors").update(voRes)
         return S_OK()
 
+    @executeWithUserProxy
     def executeForVO(self, vo):
         """
         Execute one agent cycle for VO
@@ -93,12 +95,6 @@ class PilotLoggingAgent(AgentModule):
         if uploadPath is None:
             return S_ERROR(f"Upload path on SE {uploadSE} not defined")
         self.log.info(f"Pilot upload path: {uploadPath}")
-
-        shifterName = self.opsHelper.getValue("/Services/JobMonitoring/loggingShifterName")
-        if shifterName is None:
-            return S_ERROR(f"Pilot shifter name  {shifterName} not defined")
-        self.log.info(f"Pilot shifter name for logging: {shifterName}")
-        self.am_setOption("shifterProxy", shifterName)
 
         server = self.opsHelper.getValue("/Services/JobMonitoring/DownloadLocation")
 
