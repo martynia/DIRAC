@@ -40,22 +40,25 @@ class FileCacheLoggingPlugin:
 
         res = self.pattern.match(pilotUUID)
         if not res:
-            sLog.error("Pilot UUID does not match the UUID pattern: ", "%s" % (pilotUUID,))
+            sLog.error("Pilot UUID does not match the UUID pattern. ", f"UUID: {pilotUUID}, pattern {self.pattern}")
             return S_ERROR("Pilot UUID is invalid")
-
-        with open(os.path.join(self.meta["LogPath"], pilotUUID), "a") as pilotLog:
-            try:
-                messageContent = json.loads(message)
-                if isinstance(messageContent, list):
-                    for elem in messageContent:
-                        pilotLog.write(elem + "\n")
-                else:
-                    # it could be a string, if emitted by pilot logger StringIO handler
-                    pilotLog.write(messageContent)
-            except IOError as ioerr:
-                sLog.error("Error writing to log file:", str(ioerr))
-                return S_ERROR(str(ioerr))
-        return S_OK("Message logged successfully for pilot: %s" % (pilotUUID,))
+        try:
+            with open(os.path.join(self.meta["LogPath"], pilotUUID), "a") as pilotLog:
+                try:
+                    messageContent = json.loads(message)
+                    if isinstance(messageContent, list):
+                        for elem in messageContent:
+                            pilotLog.write(elem + "\n")
+                    else:
+                        # it could be a string, if emitted by pilot logger StringIO handler
+                        pilotLog.write(messageContent)
+                except IOError as ioerr:
+                    sLog.error("Error writing to log file:", str(ioerr))
+                    return S_ERROR(str(ioerr))
+        except IOError as err:
+            sLog.exception("Error opening a pilot log file:", str(err), lException=err)
+            return S_ERROR(str(err))
+        return S_OK(f"Message logged successfully for pilot: {pilotUUID}")
 
     def finaliseLogs(self, payload, logfile):
         """
@@ -72,13 +75,13 @@ class FileCacheLoggingPlugin:
         returnCode = json.loads(payload).get("retCode", 0)
         res = self.pattern.match(logfile)
         if not res:
-            sLog.error("Pilot UUID does not match the UUID pattern: ", "%s" % (logfile,))
+            sLog.error("Pilot UUID does not match the UUID pattern. ", f"UUID: {logfile}, pattern {self.pattern}")
             return S_ERROR("Pilot UUID is invalid")
 
         try:
             filepath = self.meta["LogPath"]
             os.rename(os.path.join(filepath, logfile), os.path.join(filepath, logfile + ".log"))
-            sLog.info("Log file finalised for pilot: %s (return code: %s)" % (logfile, returnCode))
+            sLog.info(f"Log file {logfile} finalised for pilot: (return code: {returnCode})")
             return S_OK()
         except Exception as err:
             sLog.exception("Exception when finalising log: ", err)

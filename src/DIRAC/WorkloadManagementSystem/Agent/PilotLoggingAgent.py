@@ -51,6 +51,7 @@ class PilotLoggingAgent(AgentModule):
     def execute(self):
         """
         Execute one agent cycle. Upload log files to the SE and register them in the DFC.
+        Use a shifter proxy dynamically loaded for every VO
 
         :param self: self reference
         """
@@ -62,16 +63,26 @@ class PilotLoggingAgent(AgentModule):
             if pilotLogging:
                 res = self.opsHelper.getOptionsDict("/Shifter/DataManager")
                 if not res["OK"]:
-                    voRes[vo] = res["Message"]
+                    voRes[vo] = "No shifter defined - skipped"
+                    self.log.error(f"No shifter defined for VO: {vo} - skipping ...")
                     continue
-                proxyUser = res["Value"]["User"]
-                proxyGroup = res["Value"]["Group"]
-                self.log.info(f"Proxy used for pilot logging: User: {proxyUser}, Group: {proxyGroup}")
+
+                proxyUser = res["Value"].get("User", None)
+                proxyGroup = res["Value"].get("Group", None)
+                if proxyGroup is None or proxyUser is None:
+                    self.log.error(
+                        f"No proxy user or group defined for pilot: VO: {vo}, User: {proxyUser}, Group: {proxyGroup}"
+                    )
+                    voRes[vo] = "No proxy user or group defined - skipped"
+                    continue
+
+                self.log.info(f"Proxy used for pilot logging: VO: {vo}, User: {proxyUser}, Group: {proxyGroup}")
                 res = self.executeForVO(vo, proxyUserName=proxyUser, proxyUserGroup=proxyGroup)
                 if not res["OK"]:
                     voRes[vo] = res["Message"]
         if voRes:
-            return S_ERROR("Agent cycle for some VO finished with errors").update(voRes)
+            voRes.update(S_ERROR("Agent cycle for some VO finished with errors"))
+            return voRes
         return S_OK()
 
     @executeWithUserProxy
@@ -113,6 +124,7 @@ class PilotLoggingAgent(AgentModule):
         files = [
             f for f in os.listdir(pilotLogPath) if os.path.isfile(os.path.join(pilotLogPath, f)) and f.endswith("log")
         ]
+
         if not files:
             self.log.info("No files to upload for this cycle")
         for elem in files:

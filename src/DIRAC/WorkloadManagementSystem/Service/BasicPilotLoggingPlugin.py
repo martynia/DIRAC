@@ -15,7 +15,7 @@ class BasicPilotLoggingPlugin:
 
     def __init__(self):
 
-        sLog.warning("BasicPilotLoggingPlugin is being used. It only logs locally at a debug level.")
+        sLog.warn("BasicPilotLoggingPlugin is being used. It only logs locally at a debug level.")
 
     def sendMessage(self, message, UUID):
         """

@@ -200,7 +200,7 @@ class PilotCStoJSONSynchronizer:
             )
             # pilotDict['Setups'][setup]['CommandExtensions'] = pilotDict['Setups'][setup]['CommandExtensions']
 
-        # Getting the details aboout the MQ Services to be used for logging, if any
+        # Getting the details about the MQ Services to be used for logging, if any
         if "LoggingMQService" in pilotDict["Setups"][setup]:
             loggingMQService = gConfig.getOptionsDict(
                 "/Resources/MQServices/%s" % pilotDict["Setups"][setup]["LoggingMQService"]
