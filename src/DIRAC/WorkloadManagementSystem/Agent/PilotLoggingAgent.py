@@ -58,8 +58,8 @@ class PilotLoggingAgent(AgentModule):
         voRes = {}
         for vo in self.voList:
             self.opsHelper = Operations(vo=vo, setup=self.setup)
-            pilotLogging = self.opsHelper.getValue("/Services/JobMonitoring/usePilotsLoggingFlag", False)
-            # is remote pilot logging on for the VO ?
+            # is remote pilot logging enabled for the VO ?
+            pilotLogging = self.opsHelper.getValue("/Pilot/RemoteLogging", True)
             if pilotLogging:
                 res = self.opsHelper.getOptionsDict("/Shifter/DataManager")
                 if not res["OK"]:
@@ -97,17 +97,18 @@ class PilotLoggingAgent(AgentModule):
         """
 
         self.log.info(f"Pilot files upload cycle started for VO: {vo}")
-        uploadSE = self.opsHelper.getValue("/Services/JobMonitoring/UploadSE")
+        uploadSE = self.opsHelper.getValue("/Pilot/UploadSE")
         if uploadSE is None:
             return S_ERROR("Upload SE not defined")
         self.log.info(f"Pilot upload SE: {uploadSE}")
 
-        uploadPath = self.opsHelper.getValue("/Services/JobMonitoring/UploadPath")
+        uploadPath = self.opsHelper.getValue("/Pilot/UploadPath")
         if uploadPath is None:
             return S_ERROR(f"Upload path on SE {uploadSE} not defined")
+        uploadPath = os.path.join("/", vo, uploadPath)
         self.log.info(f"Pilot upload path: {uploadPath}")
 
-        server = self.opsHelper.getValue("/Services/JobMonitoring/DownloadLocation")
+        server = self.opsHelper.getValue("/Pilot/RemoteLoggerURL")
 
         if server is None:
             return S_ERROR(f"No DownloadLocation (server) set in the CS for VO: {vo}!")
