@@ -117,7 +117,12 @@ class PilotLoggingAgent(AgentModule):
 
         if not resDict["OK"]:
             return S_ERROR(resDict["Message"])
-        pilotLogPath = resDict["Value"]["LogPath"]
+
+        # vo-specific source log path:
+        pilotLogPath = os.path.join(resDict["Value"]["LogPath"], vo)
+        if not os.path.exists(pilotLogPath):
+            # not a disaster, the VO is enabled, but no logfiles were ever stored.
+            return S_OK()
         self.log.info(f"Pilot log files location = {pilotLogPath} for VO: {vo}")
 
         # get finalised (.log) files from Tornado and upload them to the selected SE

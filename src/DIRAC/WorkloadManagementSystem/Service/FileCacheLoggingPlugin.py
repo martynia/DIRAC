@@ -28,12 +28,17 @@ class FileCacheLoggingPlugin:
             os.makedirs(logPath)
         sLog.info("Pilot logging directory:", logPath)
 
-    def sendMessage(self, message, pilotUUID):
+    def sendMessage(self, message, pilotUUID, vo):
         """
         File cache sendMessage method. Write the log message to a file line by line.
 
+
         :param message: text to log in json format
         :type message: str
+        :param pilotUUID: pilot id.
+        :type pilotUUID:  a valid pilot UUID
+        :param vo: VO name of a pilot which sent the message.
+        :type vo: str
         :return: S_OK or S_ERROR
         :rtype: dict
         """
@@ -42,8 +47,11 @@ class FileCacheLoggingPlugin:
         if not res:
             sLog.error("Pilot UUID does not match the UUID pattern. ", f"UUID: {pilotUUID}, pattern {self.pattern}")
             return S_ERROR("Pilot UUID is invalid")
+        dirname = os.path.join(self.meta["LogPath"], vo)
         try:
-            with open(os.path.join(self.meta["LogPath"], pilotUUID), "a") as pilotLog:
+            if not os.path.exists(dirname):
+                os.mkdir(dirname)
+            with open(os.path.join(dirname, pilotUUID), "a") as pilotLog:
                 try:
                     messageContent = json.loads(message)
                     if isinstance(messageContent, list):
@@ -58,9 +66,9 @@ class FileCacheLoggingPlugin:
         except IOError as err:
             sLog.exception("Error opening a pilot log file:", str(err), lException=err)
             return S_ERROR(str(err))
-        return S_OK(f"Message logged successfully for pilot: {pilotUUID}")
+        return S_OK(f"Message logged successfully for pilot: {pilotUUID} and {vo}")
 
-    def finaliseLogs(self, payload, logfile):
+    def finaliseLogs(self, payload, logfile, vo):
         """
         Finalise a log file. Finalised logfile can be copied to a secure location.
 
@@ -68,6 +76,8 @@ class FileCacheLoggingPlugin:
         :type payload: dict
         :param logfile: log filename (pilotUUID).
         :type logfile: json representation of dict
+        :param vo: VO name of a pilot which sent the message.
+        :type vo: str
         :return: S_OK or S_ERROR
         :rtype: dict
         """
@@ -80,7 +90,7 @@ class FileCacheLoggingPlugin:
 
         try:
             filepath = self.meta["LogPath"]
-            os.rename(os.path.join(filepath, logfile), os.path.join(filepath, logfile + ".log"))
+            os.rename(os.path.join(filepath, vo, logfile), os.path.join(filepath, vo, logfile + ".log"))
             sLog.info(f"Log file {logfile} finalised for pilot: (return code: {returnCode})")
             return S_OK()
         except Exception as err:
