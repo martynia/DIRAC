@@ -3,6 +3,7 @@
 
 import os
 from DIRAC import gLogger, S_OK, S_ERROR
+from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
 from DIRAC.Core.DISET.RequestHandler import RequestHandler, getServiceOption
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
@@ -68,10 +69,12 @@ class TornadoPilotLoggingHandler(TornadoService):
         ## Insert your method here, don't forget the return should be serializable
         ## Returned value may be an S_OK/S_ERROR
         ## You don't need to serialize in JSON, Tornado will do it
-        # self.log.info("Message: ", message)
+
+        # determine client VO
+        vo = self.__getClientVO()
         # the plugin returns S_OK or S_ERROR
         # leave JSON decoding to the selected plugin:
-        result = self.loggingPlugin.sendMessage(message, pilotUUID)
+        result = self.loggingPlugin.sendMessage(message, pilotUUID, vo)
         return result
 
     auth_getMetadata = ["Operator", "TrustedHost"]
@@ -97,6 +100,13 @@ class TornadoPilotLoggingHandler(TornadoService):
         :rtype: dict
         """
 
-        # The plugin returns the Dirac S_OK or S_ERROR object
+        vo = self.__getClientVO()
 
-        return self.loggingPlugin.finaliseLogs(payload, pilotUUID)
+        # The plugin returns the Dirac S_OK or S_ERROR object
+        return self.loggingPlugin.finaliseLogs(payload, pilotUUID, vo)
+
+    def __getClientVO(self):
+        # get client credentials to determine the VO
+        credDict = self.getRemoteCredentials()
+        pilotGroup = credDict["group"]
+        return Registry.getVOForGroup(pilotGroup)

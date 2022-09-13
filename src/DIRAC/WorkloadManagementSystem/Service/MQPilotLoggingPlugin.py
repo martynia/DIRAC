@@ -20,7 +20,7 @@ class MQPilotLoggingPlugin:
             r"(?P<date>[0-9-]+)T(?P<time>[0-9:,]+)Z (?P<loglevel>DEBUG|INFO|ERROR|NOTICE) (?:\[(?P<source>[a-zA-Z]+)\] )?(?P<message>.*)"
         )
 
-    def sendMessage(self, message, UUID):
+    def sendMessage(self, message, UUID, vo):
         """
         A message could of a form:
         2022-06-10T11:02:02,823512Z DEBUG    [pilotLogger] X509_USER_PROXY=/scratch/dir_2313/user.proxy
