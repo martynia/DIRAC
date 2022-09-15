@@ -17,7 +17,7 @@ class BasicPilotLoggingPlugin:
 
         sLog.warn("BasicPilotLoggingPlugin is being used. It only logs locally at a debug level.")
 
-    def sendMessage(self, message, UUID):
+    def sendMessage(self, message, UUID, vo):
         """
         Dummy sendMessage method.
 
@@ -29,7 +29,7 @@ class BasicPilotLoggingPlugin:
         sLog.debug(message)
         return S_OK("Message sent")
 
-    def finaliseLogs(self, payload, UUID):
+    def finaliseLogs(self, payload, UUID, vo):
         """
         Dummy finaliseLogs method.
 
