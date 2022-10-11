@@ -21,6 +21,8 @@ class FileCacheLoggingPlugin:
         """
         # UUID pattern
         self.pattern = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
+        # pilot stamp pattern
+        self.stamppattern = re.compile(r"^[0-9A-F]{8}$")
         self.meta = {}
         logPath = os.path.join(os.getcwd(), "pilotlogs")
         self.meta["LogPath"] = logPath
@@ -35,7 +37,7 @@ class FileCacheLoggingPlugin:
 
         :param message: text to log in json format
         :type message: str
-        :param pilotUUID: pilot id.
+        :param pilotUUID: pilot id. Optimally it should be a pilot stamp if available, otherwise a generated UUID.
         :type pilotUUID:  a valid pilot UUID
         :param vo: VO name of a pilot which sent the message.
         :type vo: str
@@ -43,9 +45,14 @@ class FileCacheLoggingPlugin:
         :rtype: dict
         """
 
-        res = self.pattern.match(pilotUUID)
+        res = self.stamppattern.match(pilotUUID)
         if not res:
-            sLog.error("Pilot UUID does not match the UUID pattern. ", f"UUID: {pilotUUID}, pattern {self.pattern}")
+            res = self.pattern.match(pilotUUID)
+        if not res:
+            sLog.error(
+                "Pilot UUID does not match the UUID or stamp pattern. ",
+                f"UUID: {pilotUUID}, pilot stamp pattern {self.stamppattern}, UUID pattern {self.pattern}",
+            )
             return S_ERROR("Pilot UUID is invalid")
         dirname = os.path.join(self.meta["LogPath"], vo)
         try:
