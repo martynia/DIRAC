@@ -53,8 +53,6 @@ class TornadoPilotLoggingHandler(TornadoService):
 
         self.log.info("Request initialised.. ")
 
-    auth_sendMessage = ["Operator", "Pilot", "GenericPilot"]
-
     def export_sendMessage(self, message, pilotUUID):
         # def export_sendMessage(self, message, pilotUUID):
         """
@@ -77,8 +75,6 @@ class TornadoPilotLoggingHandler(TornadoService):
         result = self.loggingPlugin.sendMessage(message, pilotUUID, vo)
         return result
 
-    auth_getMetadata = ["Operator", "TrustedHost"]
-
     def export_getMetadata(self):
         """
         Get PilotLoggingHandler metadata. Intended to be used by a client or an agent.
@@ -86,8 +82,6 @@ class TornadoPilotLoggingHandler(TornadoService):
         :return: S_OK containing a metadata dictionary
         """
         return self.loggingPlugin.getMeta()
-
-    auth_finaliseLogs = ["Operator", "Pilot", "GenericPilot"]
 
     def export_finaliseLogs(self, payload, pilotUUID):
         """
