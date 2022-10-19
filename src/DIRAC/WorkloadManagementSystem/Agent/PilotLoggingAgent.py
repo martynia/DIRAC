@@ -1,17 +1,23 @@
 """ :mod: PilotLoggingAgent
 
-    PilotLoggingAgent sends Pilot log files to an SE
+    PilotLoggingAgent sends Pilot log files to an SE.
+
+.. literalinclude:: ../ConfigTemplate.cfg
+  :start-after: ##BEGIN PilotLoggingAgent
+  :end-before: ##END
+  :dedent: 2
+  :caption: PilotLoggingAgent options
 """
 
 # # imports
 import os
 from DIRAC import S_OK, S_ERROR, gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
+from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs
 from DIRAC.Core.Base.AgentModule import AgentModule
+from DIRAC.Core.Utilities.Proxy import executeWithUserProxy
 from DIRAC.DataManagementSystem.Client.DataManager import DataManager
 from DIRAC.WorkloadManagementSystem.Client.TornadoPilotLoggingClient import TornadoPilotLoggingClient
-from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs
-from DIRAC.Core.Utilities.Proxy import executeWithUserProxy
 
 
 class PilotLoggingAgent(AgentModule):
@@ -33,10 +39,9 @@ class PilotLoggingAgent(AgentModule):
 
         # configured VOs and setup
         res = getVOs()
-        if res["OK"]:
-            self.voList = res.get("Value", [])
-        else:
+        if not res["OK"]:
             return S_ERROR(res["Message"])
+        self.voList = res.get("Value", [])
 
         if isinstance(self.voList, str):
             self.voList = [self.voList]
@@ -61,14 +66,14 @@ class PilotLoggingAgent(AgentModule):
             # is remote pilot logging enabled for the VO ?
             pilotLogging = self.opsHelper.getValue("/Pilot/RemoteLogging", True)
             if pilotLogging:
-                res = self.opsHelper.getOptionsDict("/Shifter/DataManager")
+                res = self.opsHelper.getOptionsDict("Shifter/DataManager")
                 if not res["OK"]:
                     voRes[vo] = "No shifter defined - skipped"
                     self.log.error(f"No shifter defined for VO: {vo} - skipping ...")
                     continue
 
-                proxyUser = res["Value"].get("User", None)
-                proxyGroup = res["Value"].get("Group", None)
+                proxyUser = res["Value"].get("User")
+                proxyGroup = res["Value"].get("Group")
                 if proxyGroup is None or proxyUser is None:
                     self.log.error(
                         f"No proxy user or group defined for pilot: VO: {vo}, User: {proxyUser}, Group: {proxyGroup}"
@@ -90,25 +95,25 @@ class PilotLoggingAgent(AgentModule):
         """
         Execute one agent cycle for VO
 
-        :param vo: vo enabled for remote pilot logging
-        :type vo: str
+        :param str vo: vo enabled for remote pilot logging
         :return: S_OK or S_ERROR
         :rtype: dict
         """
 
         self.log.info(f"Pilot files upload cycle started for VO: {vo}")
-        uploadSE = self.opsHelper.getValue("/Pilot/UploadSE")
+        pilotOptions = self.opsHelper.getOptionsDict("Pilot")
+        uploadSE = pilotOptions.get("UploadSE")
         if uploadSE is None:
             return S_ERROR("Upload SE not defined")
         self.log.info(f"Pilot upload SE: {uploadSE}")
 
-        uploadPath = self.opsHelper.getValue("/Pilot/UploadPath")
+        uploadPath = pilotOptions.get("UploadPath")
         if uploadPath is None:
             return S_ERROR(f"Upload path on SE {uploadSE} not defined")
         uploadPath = os.path.join("/", vo, uploadPath)
         self.log.info(f"Pilot upload path: {uploadPath}")
 
-        server = self.opsHelper.getValue("/Pilot/RemoteLoggerURL")
+        server = pilotOptions.get("RemoteLoggerURL")
 
         if server is None:
             return S_ERROR(f"No DownloadLocation (server) set in the CS for VO: {vo}!")
@@ -116,7 +121,7 @@ class PilotLoggingAgent(AgentModule):
         resDict = client.getMetadata()
 
         if not resDict["OK"]:
-            return S_ERROR(resDict["Message"])
+            return resDict["Message"]
 
         # vo-specific source log path:
         pilotLogPath = os.path.join(resDict["Value"]["LogPath"], vo)
