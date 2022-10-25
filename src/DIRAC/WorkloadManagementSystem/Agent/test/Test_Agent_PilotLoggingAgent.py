@@ -1,10 +1,11 @@
 import unittest
 import os
+from contextlib import contextmanager
 from mock import MagicMock, patch, call
+
+from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 import DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent
 from DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent import PilotLoggingAgent
-from DIRAC import gLogger, gConfig, S_OK, S_ERROR
-from contextlib import contextmanager
 
 
 @contextmanager
