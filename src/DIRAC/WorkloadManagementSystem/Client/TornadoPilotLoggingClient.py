@@ -1,10 +1,20 @@
-from DIRAC.Core.Tornado.Client.TornadoClient import TornadoClient
+from DIRAC.Core.Base.Client import Client, createClient
 
 
-class TornadoPilotLoggingClient(TornadoClient):
-    """
-    Tornado pilot logging client intended to be used when contacting TornadoPilotLogging service.
-    """
+@createClient("WorkloadManagement/TornadoPilotLogging")
+class TornadoPilotLoggingClient(Client):
+    def __init__(self, url=None, **kwargs):
+        """
+        Initialise a client.
+
+        :param str url: Server URL, if None, defaults to "WorkloadManagement/TornadoPilotLogging"
+        :param dict kwargs: additional keyword arguments, currently unused.
+        """
+        super(TornadoPilotLoggingClient, self).__init__(**kwargs)
+        if not url:
+            self.serverURL = "WorkloadManagement/TornadoPilotLogging"
+        else:
+            self.serverURL = url
 
     def getMetadata(self):
         """
@@ -14,6 +24,6 @@ class TornadoPilotLoggingClient(TornadoClient):
         :rtype: dict
         """
 
-        retVal = self.executeRPC("getMetadata")
+        retVal = self._getRPC().getMetadata()
 
         return retVal
