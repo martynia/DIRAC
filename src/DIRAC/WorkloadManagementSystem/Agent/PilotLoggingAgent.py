@@ -113,11 +113,7 @@ class PilotLoggingAgent(AgentModule):
         uploadPath = os.path.join("/", vo, uploadPath)
         self.log.info(f"Pilot upload path: {uploadPath}")
 
-        server = pilotOptions.get("RemoteLoggerURL")
-
-        if server is None:
-            return S_ERROR(f"No DownloadLocation (server) set in the CS for VO: {vo}!")
-        client = TornadoPilotLoggingClient(server, useCertificates=True)
+        client = TornadoPilotLoggingClient(useCertificates=True)
         resDict = client.getMetadata()
 
         if not resDict["OK"]:
