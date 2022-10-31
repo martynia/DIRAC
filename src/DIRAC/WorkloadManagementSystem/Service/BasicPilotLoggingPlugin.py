@@ -21,8 +21,7 @@ class BasicPilotLoggingPlugin:
         """
         Dummy sendMessage method.
 
-        :param message: text to log
-        :type message: str
+        :param str message: text to log
         :return: None
         :rtype: None
         """

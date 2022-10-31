@@ -1,5 +1,5 @@
 import unittest
-from mock import patch
+from unittest.mock import patch
 import os
 import json
 import tempfile
@@ -84,14 +84,15 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
             + "2022-02-23 13:48:36.123456 UTC DEBUG [PilotParams] JSON file analysed: pilot.json"
         )
         messageJSON = json.dumps(messsageText)
+        vo = "anyVO"
         pilotUUID = "78f39a90-2073-11ec-98d7-b496913c0cf4"
 
         # use a temporary dir, not the one above. Plugin will create the file to write into.
         with tempfile.TemporaryDirectory(suffix="pilottests") as d:
             plugin.meta["LogPath"] = d
-            res = plugin.sendMessage(messageJSON, pilotUUID)
+            res = plugin.sendMessage(messageJSON, pilotUUID, vo)
             self.assertTrue(res["OK"])
-            with open(os.path.join(d, pilotUUID), "r") as pilotLog:
+            with open(os.path.join(d, vo, pilotUUID)) as pilotLog:
                 content = pilotLog.read()
                 self.assertEqual(content, messsageText)
 
@@ -99,11 +100,11 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
         with tempfile.TemporaryDirectory(suffix="pilottests") as d:
             plugin.meta["LogPath"] = d
             os.chmod(d, 0o0000)
-            res = plugin.sendMessage(messageJSON, pilotUUID)
+            res = plugin.sendMessage(messageJSON, pilotUUID, vo)
             self.assertFalse(res["OK"])
 
         pilotUUID = "whatever"
-        res = plugin.sendMessage(messageJSON, pilotUUID)
+        res = plugin.sendMessage(messageJSON, pilotUUID, vo)
         self.assertFalse(res["OK"])
 
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os.path, "exists")
@@ -124,25 +125,28 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
         mockExists.return_value = True  # will not create a file
         mockGetcwd.return_value = "/tornado/document/root"  # so we have a path defined (will overwrite it below)
         plugin = FileCacheLoggingPlugin()
+        vo = "anyVO"
 
         with tempfile.TemporaryDirectory(suffix="pilottests") as d:
             plugin.meta["LogPath"] = d
             payload = '{"retCode": 0}'
             logfile = "78f39a90-2073-11ec-98d7-b496913c0cf4"  # == pilotUUID
+            os.mkdir(os.path.join(d, vo))  # vo specific directory, normally created by sending the first message
             # will fail here...
-            res = plugin.finaliseLogs(payload, logfile)
+            res = plugin.finaliseLogs(payload, logfile, vo)
             self.assertFalse(res["OK"])
             # create a file ..
-            with open(os.path.join(d, logfile), "w") as f:
+            with open(os.path.join(d, vo, logfile), "w") as f:
                 f.write("Create a dummy logfile")
-            res = plugin.finaliseLogs(payload, logfile)
+            res = plugin.finaliseLogs(payload, logfile, vo)
             self.assertTrue(res["OK"])
 
             logfile = "invalid!"
-            res = plugin.finaliseLogs(payload, logfile)
+            res = plugin.finaliseLogs(payload, logfile, vo)
             self.assertFalse(res["OK"])
 
 
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(TornadoPilotLoggingHandlerTestCase)
-    testResult = unittest.TextTestResult(verbosity=2).run(suite)
+    runner = unittest.TextTestRunner(verbosity=2)
+    runner.run(suite)
