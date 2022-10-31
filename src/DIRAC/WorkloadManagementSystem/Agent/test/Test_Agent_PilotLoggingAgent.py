@@ -1,7 +1,7 @@
 import unittest
 import os
 from contextlib import contextmanager
-from mock import MagicMock, patch, call
+from unittest.mock import MagicMock, patch, call
 
 from DIRAC import gLogger, gConfig, S_OK, S_ERROR
 import DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent
@@ -69,8 +69,8 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
             res = mAgent.execute()
             assert mockOp.called
             mockOp.assert_called_with(vo=vo, setup=mockSetup.return_value)
-            mockOp.return_value.getValue.assert_called_with("/Services/JobMonitoring/usePilotsLoggingFlag", False)
-            mockOp.return_value.getOptionsDict.assert_called_with("/Shifter/DataManager")
+            mockOp.return_value.getValue.assert_called_with("/Pilot/RemoteLogging", True)
+            mockOp.return_value.getOptionsDict.assert_called_with("Shifter/DataManager")
             mAgent.executeForVO.assert_called_with(
                 vo,
                 proxyUserName=upDict["Value"]["User"],
@@ -101,44 +101,52 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
                 self.assertIn(vo, res)
                 self.assertIsNotNone(res[vo])
 
+    @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.Operations")
     @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.DataManager")
     @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os, "listdir")
     @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os, "remove")
     @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os.path, "isfile")
+    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os.path, "exists")
     @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.TornadoPilotLoggingClient")
     @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent, "executeWithUserProxy")
-    def test_executeForVO(self, mockProxy, mockTC, mockisfile, mockremove, mocklistdir, mockDM):
+    def test_executeForVO(self, mockProxy, mockTC, mockexists, mockisfile, mockremove, mocklistdir, mockDM, mockOp):
         with patch_parent(PilotLoggingAgent) as MockAgent:
+
+            opsHelperValues = {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}
             mAgent = MockAgent()
-            opsHelperValues = ["uploadSE", "/uploadPath", "tornadoServer"]
-            mAgent.opsHelper.getValue.side_effect = opsHelperValues
+            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
+            mAgent.opsHelper = mockOp.return_value
             mockisfile.return_value = True
             mocklistdir.return_value = ["file1.log", "file2.log", "file3.log"]
             resDict = {"OK": True, "Value": {"LogPath": "/pilot/log/path/"}}
             mockTC.return_value.getMetadata.return_value = resDict
+            vo = "gridpp"
 
             # success route
-            res = mAgent.executeForVO(vo="gridpp")
+            res = mAgent.executeForVO(vo=vo)
 
-            mockTC.assert_called_with("tornadoServer", useCertificates=True)
+            mockTC.assert_called_with(useCertificates=True)
             assert mockTC.return_value.getMetadata.called
-            mocklistdir.assert_called_with(resDict["Value"]["LogPath"])
+            mockexists.return_value = True
+            mocklistdir.assert_called_with(os.path.join(resDict["Value"]["LogPath"], vo))
 
             calls = []
             for elem in mocklistdir.return_value:
-                calls.append(call(os.path.join(resDict["Value"]["LogPath"], elem)))
-            mockisfile.has_calls(calls)
+                calls.append(call(os.path.join(resDict["Value"]["LogPath"], vo, elem)))
+            mockisfile.assert_has_calls(calls)
 
             assert mockDM.called
             mockDM.return_value.putAndRegister.return_value = {"OK": True}
 
             calls = []
+            mockDM.return_value.putAndRegister.assert_called()
             for elem in mocklistdir.return_value:
-                lfn = opsHelperValues[1] + elem
-                name = resDict["Value"]["LogPath"] + elem
-                calls.append(call(lfn=lfn, fileName=name, diracSE=opsHelperValues[0], overwrite=True))
+                lfn = os.path.join(opsHelperValues["UploadPath"], elem)
+                name = os.path.join(resDict["Value"]["LogPath"], vo, elem)
+                mockDM.return_value.putAndRegister.assert_any_call(
+                    lfn=lfn, fileName=name, diracSE=opsHelperValues["UploadSE"], overwrite=True
+                )
 
-            mockDM.return_value.putAndRegister.has_calls(calls)
             call_count = len(mocklistdir.return_value)
             self.assertEqual(call_count, mockDM.return_value.putAndRegister.call_count)
             self.assertEqual(call_count, mockremove.call_count)
@@ -151,26 +159,27 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
             mAgent.opsHelper.getValue.side_effect = opsHelperValues
             mockTC.reset_mock(return_value=True)
             mockTC.return_value.getMetadata.return_value = {"OK": False, "Message": "Failed, sorry.."}
-            res = mAgent.executeForVO(vo="gridpp")
+            res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
 
             # config values not correct:
             opsHelperValues = [None, "/uploadPath", "tornadoServer"]
             mAgent.opsHelper.getValue.side_effect = opsHelperValues
-            res = mAgent.executeForVO(vo="gridpp")
+            res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
 
             opsHelperValues = ["uploadSE", None, "tornadoServer"]
             mAgent.opsHelper.getValue.side_effect = opsHelperValues
-            res = mAgent.executeForVO(vo="gridpp")
+            res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
 
             opsHelperValues = ["uploadSE", "uploadPath", None]
             mAgent.opsHelper.getValue.side_effect = opsHelperValues
-            res = mAgent.executeForVO(vo="gridpp")
+            res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
 
 
 if __name__ == "__main__":
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(PilotAgentTestCase)
-    testResult = unittest.TextTestResult(verbosity=2).run(suite)
+    suite = unittest.defaultTestLoader.loadTestsFromTestCase(PilotLoggingAgentTestCase)
+    runner = unittest.TextTestRunner(verbosity=2)
+    runner.run(suite)

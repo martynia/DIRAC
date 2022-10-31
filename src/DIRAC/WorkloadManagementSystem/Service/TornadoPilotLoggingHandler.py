@@ -28,9 +28,9 @@ class TornadoPilotLoggingHandler(TornadoService):
         defaultOption, defaultClass = "LoggingPlugin", "BasicPilotLoggingPlugin"
         configValue = getServiceOption(infoDict, defaultOption, defaultClass)
 
-        result = ObjectLoader().loadObject("WorkloadManagementSystem.Service.%s" % (configValue,), configValue)
+        result = ObjectLoader().loadObject(f"WorkloadManagementSystem.Service.{configValue}", configValue)
         if not result["OK"]:
-            cls.log.error("Failed to load LoggingPlugin", "%s: %s" % (configValue, result["Message"]))
+            cls.log.error("Failed to load LoggingPlugin", "{}: {}".format(configValue, result["Message"]))
             return result
 
         componentClass = result["Value"]
@@ -43,15 +43,6 @@ class TornadoPilotLoggingHandler(TornadoService):
         if not os.path.exists(logPath):
             os.makedirs(logPath)
         cls.log.info("Pilot logging directory:", logPath)
-
-    def initializeRequest(self):
-        """
-        Called for each request.
-
-        :return: None
-        """
-
-        self.log.info("Request initialised.. ")
 
     def export_sendMessage(self, message, pilotUUID):
         # def export_sendMessage(self, message, pilotUUID):

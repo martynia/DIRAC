@@ -29,7 +29,7 @@ class PilotLoggingAgent(AgentModule):
 
     def initialize(self):
         """
-        agent's initalisation. Use this agent's CS information to:
+        agent's initialisation. Use this agent's CS information to:
         Determine what Defaults/Shifter shifter proxy to use.,
         get the target SE name from the CS.
         Obtain log file location from Tornado.
@@ -40,7 +40,7 @@ class PilotLoggingAgent(AgentModule):
         # configured VOs and setup
         res = getVOs()
         if not res["OK"]:
-            return S_ERROR(res["Message"])
+            return res
         self.voList = res.get("Value", [])
 
         if isinstance(self.voList, str):
@@ -93,7 +93,9 @@ class PilotLoggingAgent(AgentModule):
     @executeWithUserProxy
     def executeForVO(self, vo):
         """
-        Execute one agent cycle for VO
+        Execute one agent cycle for a VO. It obtains VO-specific configuration pilot options from the CS:
+        UploadPath - the path where the VO wants to upload pilot logs. It has to start with a VO name (/vo/path).
+        UploadSE - Storage element where the logs will be kept.
 
         :param str vo: vo enabled for remote pilot logging
         :return: S_OK or S_ERROR
@@ -110,14 +112,13 @@ class PilotLoggingAgent(AgentModule):
         uploadPath = pilotOptions.get("UploadPath")
         if uploadPath is None:
             return S_ERROR(f"Upload path on SE {uploadSE} not defined")
-        uploadPath = os.path.join("/", vo, uploadPath)
         self.log.info(f"Pilot upload path: {uploadPath}")
 
         client = TornadoPilotLoggingClient(useCertificates=True)
         resDict = client.getMetadata()
 
         if not resDict["OK"]:
-            return resDict["Message"]
+            return resDict
 
         # vo-specific source log path:
         pilotLogPath = os.path.join(resDict["Value"]["LogPath"], vo)
@@ -141,7 +142,7 @@ class PilotLoggingAgent(AgentModule):
             if not res["OK"]:
                 self.log.error("Could not upload", f"to {uploadSE}: {res['Message']}")
             else:
-                self.log.info("File uploaded: ", f"LFN = {res['Value']}")
+                self.log.verbose("File uploaded: ", f"LFN = {res['Value']}")
                 try:
                     os.remove(name)
                 except Exception as excp:

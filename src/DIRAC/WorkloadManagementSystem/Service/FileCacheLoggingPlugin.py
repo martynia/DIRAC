@@ -1,7 +1,9 @@
 """
 File cache logging plugin.
 """
-import os, json, re
+import os
+import json
+import re
 from DIRAC import S_OK, S_ERROR, gLogger
 
 sLog = gLogger.getSubLogger(__name__)
@@ -62,10 +64,10 @@ class FileCacheLoggingPlugin:
                     else:
                         # it could be a string, if emitted by pilot logger StringIO handler
                         pilotLog.write(messageContent)
-                except IOError as ioerr:
-                    sLog.error("Error writing to log file:", str(ioerr))
-                    return S_ERROR(str(ioerr))
-        except IOError as err:
+                except OSError as oserr:
+                    sLog.error("Error writing to log file:", str(oserr))
+                    return S_ERROR(str(oserr))
+        except OSError as err:
             sLog.exception("Error opening a pilot log file:", str(err), lException=err)
             return S_ERROR(str(err))
         return S_OK(f"Message logged successfully for pilot: {pilotUUID} and {vo}")
