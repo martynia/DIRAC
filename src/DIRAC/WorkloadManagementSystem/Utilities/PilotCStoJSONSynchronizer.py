@@ -246,17 +246,18 @@ class PilotCStoJSONSynchronizer:
             pilotDict["Setups"][setup]["Logging"]["Queues"] = queuesDict
         elif "loggingRESTService" in pilotDict["Setups"][setup]:
             self.log.debug(
-                "Getting option of ", "/DIRAC/Setups/%s/%s" % (setup, pilotDict["Setups"][setup]["loggingRESTService"])
+                "Getting option of ",
+                "/DIRAC/Setups/{}/{}".format(setup, pilotDict["Setups"][setup]["loggingRESTService"]),
             )
             result = gConfig.getOption(
-                "/DIRAC/Setups/%s/%s" % (setup, pilotDict["Setups"][setup]["loggingRESTService"])
+                "/DIRAC/Setups/{}/{}".format(setup, pilotDict["Setups"][setup]["loggingRESTService"])
             )
             if not result["OK"]:
                 return result
             optValue = result["Value"]
             self.log.debug("value: ", optValue)
             tornadoService = gConfig.getOptionsDict(
-                "/Systems/%s/%s" % (pilotDict["Setups"][setup]["loggingRESTService"], optValue)
+                "/Systems/{}/{}".format(pilotDict["Setups"][setup]["loggingRESTService"], optValue)
             )
             if not tornadoService["OK"]:
                 self.log.error(tornadoService["Message"])
