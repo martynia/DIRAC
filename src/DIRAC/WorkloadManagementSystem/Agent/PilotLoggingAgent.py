@@ -86,6 +86,8 @@ class PilotLoggingAgent(AgentModule):
                 if not res["OK"]:
                     voRes[vo] = res["Message"]
         if voRes:
+            for key, value in voRes.items():
+                self.log.error(f"Error for {key} vo; message: {value}")
             voRes.update(S_ERROR("Agent cycle for some VO finished with errors"))
             return voRes
         return S_OK()
@@ -103,7 +105,10 @@ class PilotLoggingAgent(AgentModule):
         """
 
         self.log.info(f"Pilot files upload cycle started for VO: {vo}")
-        pilotOptions = self.opsHelper.getOptionsDict("Pilot")
+        res = self.opsHelper.getOptionsDict("Pilot")
+        if not res["OK"]:
+            return S_ERROR(f"No pilot section for {vo} vo")
+        pilotOptions = res["Value"]
         uploadSE = pilotOptions.get("UploadSE")
         if uploadSE is None:
             return S_ERROR("Upload SE not defined")
