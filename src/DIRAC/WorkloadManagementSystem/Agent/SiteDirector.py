@@ -1014,10 +1014,6 @@ class SiteDirector(AgentModule):
 
         pilotOptions.append("--pythonVersion=3")
 
-        # Debug. Both for the standard and (if enabled) extended logger.
-        if self.pilotLogLevel.lower() == "debug":
-            pilotOptions.append("-ddd")
-
         # DIRAC Extensions to be used in pilots
         pilotExtensionsList = opsHelper.getValue("Pilot/Extensions", [])
         extensionsList = []
