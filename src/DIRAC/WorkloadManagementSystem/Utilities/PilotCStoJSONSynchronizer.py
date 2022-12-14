@@ -84,6 +84,12 @@ class PilotCStoJSONSynchronizer:
             return opRes
         pilotDict.update(opRes["Value"])
 
+        # we still need a pilotVOVersion
+        self.pilotVOVersion = pilotDict.get(self.pilotSetup, {}).get("Pilot", {}).get("Version")
+        # if self.pilotVORepo is defined and self.pilotVOVersion is not, syncScripts is likely to fail.
+        if self.pilotVOVersion is None and self.pilotVORepo:
+            self.log.error("Pilot VO repo is set in the CS but the pilot VO version is not. Expect problems ahead")
+
         self.log.verbose("From Resources/Sites")
         sitesSection = gConfig.getSections("/Resources/Sites/")
         if not sitesSection["OK"]:
