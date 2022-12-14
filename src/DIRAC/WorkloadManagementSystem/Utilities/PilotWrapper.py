@@ -52,7 +52,6 @@ import json
 import os
 import urllib
 import ssl
-import argparse
 import shlex
 from uuid import uuid1
 
@@ -346,48 +345,15 @@ args = opt.split()
 # let's see if we have remote logging enabled (-z), if not run the pilot script with os.system, as before
 
 logger.info("dirac-pilot.py  will be called: with %%s " %% args)
-optParser = argparse.ArgumentParser()
-optParser.add_argument('-z', '--pilotLogging', action='store_true')
-optParser.add_argument('-g', '--loggerURL', default="")
-optParser.add_argument('-S', '--setup', default="")
-optParser.add_argument('-F', '--pilotCFGFile', default="pilot.json")
 
-res, unknown = optParser.parse_known_args(args)
+# call dirac-pilot.py and pass log records accumulated so far as a standard input. A decision to use the buffer
+# in a remote logger is made later in dirac-pilot.py script
 
-setup = res.setup
-
-major, minor, micro, _, _  = sys.version_info
-
-if res.pilotLogging:
-  loggerURL = res.loggerURL
-
-  if loggerURL:
-      logger.info("Remote logging activated.")
-      # send what we have so far.
-      sendMessage(loggerURL, 'sendMessage', buffer.stream.getvalue(), UUID)
-
-      #opt = opt + " --pilotUUID " + UUID
-      proc = subprocess.Popen(shlex.split("$py dirac-pilot.py " + opt), bufsize = 1,
-                              stdout=sys.stdout, stderr=sys.stderr, universal_newlines = True)
-      proc.wait()
-      ret = proc.returncode
-
-  else:
-    # classic logger
-    logger.error("No Logging URL - cannot activate remote logger ")
-    cmd = "$py dirac-pilot.py %%s" %% opt
-    logger.info('Executing: %%s' %% cmd)
-    sys.stdout.flush()
-    ret = os.system(cmd)
-else:
-  cmd = "$py dirac-pilot.py %%s" %% opt
-  logger.info('Executing: %%s' %% cmd)
-  sys.stdout.flush()
-  ret = os.system(cmd)
-
+proc = subprocess.Popen(shlex.split("$py dirac-pilot.py " + opt), bufsize = 1, stdin = subprocess.PIPE,
+                        stdout=sys.stdout, stderr=sys.stderr, universal_newlines = True)
+proc.communicate(buffer.stream.getvalue())
+ret = proc.returncode
 # and cleaning up
-if res.pilotLogging and loggerURL:
-  sendMessage(loggerURL, 'finaliseLogs', {'retCode': ret}, UUID)
 buffer.stream.close()
 shutil.rmtree(pilotWorkingDirectory)
 
