@@ -299,8 +299,7 @@ submitJob() {
     set -e
   fi
 
-  cp "${TESTCODE}/DIRAC/tests/Jenkins/dirac-proxy-download.py" "."
-  python dirac-proxy-download.py "${DIRACUSERDN}" -R "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True -o /DIRAC/Security/CertFile=/home/dirac/certs/hostcert.pem -o /DIRAC/Security/KeyFile=/home/dirac/certs/hostkey.pem -o /DIRAC/Setup="${DIRACSETUP}" -ddd
+  dirac-admin-get-proxy "${DIRACUSERDN}" "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True -o /DIRAC/Security/CertFile=/home/dirac/certs/hostcert.pem -o /DIRAC/Security/KeyFile=/home/dirac/certs/hostkey.pem -o /DIRAC/Setup="${DIRACSETUP}" --out="/tmp/x509up_u${UID}" -ddd
   if [[ -f "${TESTCODE}/${VO}DIRAC/tests/Jenkins/dirac-test-job.py" ]]; then
     cp "${TESTCODE}/${VO}DIRAC/tests/Jenkins/dirac-test-job.py" "."
   else
@@ -662,7 +661,7 @@ diracServices(){
   echo '==> [diracServices]'
 
   # Ignore tornado services
-  local services=$(cut -d '.' -f 1 < services | grep -v Tornado | grep -v TokenManager |  grep -v PilotsLogging | grep -v StorageElementHandler | grep -v ^ConfigurationSystem | grep -v RAWIntegrity | grep -v RunDBInterface | grep -v ComponentMonitoring | sed 's/System / /g' | sed 's/Handler//g' | sed 's/ /\//g')
+  local services=$(cut -d '.' -f 1 < services | grep -v Tornado | grep -v TokenManager | grep -v StorageElementHandler | grep -v ^ConfigurationSystem | grep -v RAWIntegrity | grep -v RunDBInterface | grep -v ComponentMonitoring | sed 's/System / /g' | sed 's/Handler//g' | sed 's/ /\//g')
 
   # group proxy, will be uploaded explicitly
   #  echo '==> getting/uploading proxy for prod'
@@ -959,19 +958,17 @@ startRunsv(){
 downloadProxy() {
   echo '==> [downloadProxy]'
 
-  cp "${TESTCODE}/DIRAC/tests/Jenkins/dirac-proxy-download.py" .
-
   if [[ "${PILOTCFG}" ]]; then
     if [[ -e "${CLIENTINSTALLDIR}/diracos/etc/dirac.cfg" ]]; then # called from the py3 client directory
-      python dirac-proxy-download.py "${DIRACUSERDN}" -R "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${CLIENTINSTALLDIR}/diracos/etc/dirac.cfg" "${PILOTINSTALLDIR}/$PILOTCFG" "${DEBUG}"
+      dirac-admin-get-proxy "${DIRACUSERDN}" "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${CLIENTINSTALLDIR}/diracos/etc/dirac.cfg" "${PILOTINSTALLDIR}/$PILOTCFG" --out="/tmp/x509up_u${UID}" "${DEBUG}"
     else # assuming it's the pilot
-      python dirac-proxy-download.py "${DIRACUSERDN}" -R "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${PILOTINSTALLDIR}/$PILOTCFG" "${DEBUG}"
+      dirac-admin-get-proxy "${DIRACUSERDN}" "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${PILOTINSTALLDIR}/$PILOTCFG" --out="/tmp/x509up_u${UID}" "${DEBUG}"
     fi
   else
     if [[ -e "${CLIENTINSTALLDIR}/diracos/etc/dirac.cfg" ]]; then # called from the py3 client directory
-      python dirac-proxy-download.py "${DIRACUSERDN}" -R "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${CLIENTINSTALLDIR}/diracos/etc/dirac.cfg" "${PILOTINSTALLDIR}/$PILOTCFG" "${DEBUG}"
+      dirac-admin-get-proxy "${DIRACUSERDN}" "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${CLIENTINSTALLDIR}/diracos/etc/dirac.cfg" "${PILOTINSTALLDIR}/etc/dirac.cfg" --out="/tmp/x509up_u${UID}" "${DEBUG}"
     else # assuming it's the pilot
-      python dirac-proxy-download.py "${DIRACUSERDN}" -R "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${PILOTINSTALLDIR}/etc/dirac.cfg" "${DEBUG}"
+      dirac-admin-get-proxy "${DIRACUSERDN}" "${DIRACUSERROLE}" -o /DIRAC/Security/UseServerCertificate=True --cfg "${PILOTINSTALLDIR}/etc/dirac.cfg" --out="/tmp/x509up_u${UID}" "${DEBUG}"
     fi
   fi
 

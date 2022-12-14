@@ -29,7 +29,6 @@ FEATURE_VARIABLES = {
     "TEST_HTTPS": "No",
     "DIRAC_FEWER_CFG_LOCKS": None,
     "DIRAC_USE_JSON_ENCODE": None,
-    "DIRAC_USE_JSON_DECODE": None,
 }
 DEFAULT_MODULES = {
     "DIRAC": Path(__file__).parent.absolute(),
@@ -537,14 +536,14 @@ def _check_containers_running(*, is_up=True):
             raise typer.Exit(code=1)
 
 
-def _find_dirac_release_and_branch():
+def _find_dirac_release():
     # Start by looking for the GitHub/GitLab environment variables
-    ref = os.environ.get("CI_COMMIT_REF_NAME", os.environ.get("GITHUB_REF"))
-    if ref == "refs/heads/integration":
-        return "integration", ""
-    ref = os.environ.get("CI_MERGE_REQUEST_TARGET_BRANCH_NAME", os.environ.get("GITHUB_BASE_REF"))
-    if ref == "integration":
-        return "integration", ""
+    if "GITHUB_BASE_REF" in os.environ:  # this will be "rel-v8r0"
+        return os.environ["GITHUB_BASE_REF"]
+    if "CI_COMMIT_REF_NAME" in os.environ:
+        return os.environ["CI_COMMIT_REF_NAME"]
+    if "CI_MERGE_REQUEST_TARGET_BRANCH_NAME" in os.environ:
+        return os.environ["CI_MERGE_REQUEST_TARGET_BRANCH_NAME"]
 
     repo = git.Repo(os.getcwd())
     # Try to make sure the upstream remote is up to date
@@ -577,9 +576,9 @@ def _find_dirac_release_and_branch():
             err=True,
             fg=c.YELLOW,
         )
-        return "integration", ""
+        return "integration"
     else:
-        return "", f"v{version.major}r{version.minor}"
+        return version_branch
 
 
 def _make_env(flags):
@@ -645,7 +644,9 @@ def _make_config(modules, flags, release_var, editable):
     if release_var:
         config |= dict([release_var.split("=", 1)])
     else:
-        config["DIRAC_RELEASE"], config["DIRACBRANCH"] = _find_dirac_release_and_branch()
+        config["DIRAC_RELEASE"] = _find_dirac_release()
+
+    print(config)
 
     for key, default_value in FEATURE_VARIABLES.items():
         config[key] = flags.pop(key, default_value)

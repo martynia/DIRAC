@@ -1,3 +1,139 @@
+[v8.1.0a6]
+
+*Resources
+
+FIX: (#6620) convert ARC to DIRAC JobID in AREXCE
+FIX: (#6618) SSHBatchComputingElement needs self.account
+FIX: (#6608) HTCondorCE: use CS location Resources/Computing/CEDefaults/HTCondorCE instead of Resources/Computing/HTCondorCE
+FIX: (#6595) fix delegation process in the AREXCE
+
+*WorkloadManagementSystem
+
+FIX: (#6618) encoding proxy in PilotWrapper.py
+FIX: (#6609) ExtraPilotOptions can be a comma-separated list
+
+*StorageManagamentSystem
+
+FIX: (#6617) fix py3 incompatibility in wakeupOldRequests
+
+*DataManagementSystem
+
+FIX: (#6591) Faster query to list directory for DFC LHCb managers
+
+[v8.1.0a5]
+
+*Resources
+
+FIX: (#6577) multi-node allocations with SLURM
+FIX: (#6558) AREXCE._getDelegation() returns an error if the process cannot be completed
+
+*ConfigurationSystem
+
+NEW: (#6576) BDII2CSAgent: allow using AREX or ARC6 Computing Elements instead of ARC, fixes #6541
+
+*tests
+
+NEW: (#6569) added system/rms_script.sh test for basic RMS test
+
+*WorkloadManagementSystem
+
+CHANGE: (#6568) improve killing of process with psutil
+CHANGE: (#6556) completely removed old PilotsLogging machinery
+
+*DataManagementSystem
+
+NEW: (#6567) TornadoS3GatewayHandler service
+
+*ProductionSystem
+
+NEW: (#6567) TornadoProductionManagerHandler service
+
+*StorageManagementSystem
+
+NEW: (#6567) TornadoStorageManagerHandler service
+
+*MonitoringSystem
+
+CHANGE: (#6563) remove setup
+
+*Subsystem
+
+CHANGE: (#6561) Swapped the default of EnableSecurityLogging flag
+FIX: (#6553) simplified NotificationHandler
+
+*Core
+
+CHANGE: (#6466) removed DIRAC_USE_JSON_DECODE, flipped DIRAC_USE_JSON_ENCODE
+
+[v8.1.0a4]
+
+*Resources
+
+NEW: (#6530) add the ARCLogLevel option in ARC
+NEW: (#6530) add the ComputingInfoEndpoint in ARC6
+FIX: (#6530) restore a commented line in AREX._reset()
+FIX: (#6524) Support using ARC that was compiled against SWIG 4.1+
+NEW: (#6506) Added network selection to CloudCE.
+FIX: (#6505) simplifying `if` statements for setting bools
+
+*WorkloadManagement
+
+FIX: (#6525) Ensure cpuNormalizationFactor is a float
+FIX: (#6489) pass CE parameters to dirac-jobexec instead of writing them in the configuration
+
+*WorkloadManagementSystem
+
+FIX: (#6521) JobDB.getJobAttributes() returns an empty dict if jobID does not exist
+FIX: (#6479) reduce the PollingTime of JobAgent to 20s
+
+*ResourceStatusSystem
+
+FIX: (#6513) GOCDB parser to understand also real URLs
+FIX: (#6501) replace pre-Python 2.5 ternary syntax
+
+*docs
+
+FIX: (#6512) Added CloudComputingElement to AdminGuide/Resources
+
+*ConfigurationSystem
+
+FIX: (#6505) simplifying `if` statements for returning bools
+
+*DataManagementSystem
+
+FIX: (#6505) simplifying `if` statements for returning bools
+FIX: (#6505) use `not in` instead of `not ... in`
+FIX: (#6505) simplify loop with `any` call
+
+*FrameworkSystem
+
+FIX: (#6505) simplifying `if` statements for setting bools
+FIX: (#6505) simplified if statement for checking list/string len
+FIX: (#6501) replace pre-Python 2.5 ternary syntax
+NEW: (#6450) added TornadoComponentMonitoringHandler
+NEW: (#6450) added TornadoNotificationHandler
+NEW: (#6450) added TornadoUserProfileManagerHandler
+
+*TransformationSystem
+
+FIX: (#6505) simplifying `if` statements [unneeded `not`]
+FIX: (#6505) simplified if statement for checking list/string len
+
+*Core
+
+FIX: (#6480) quoting the DB passwords for special characters
+FIX: (#6462) Scripts: adapt to proper way of getting console_scripts entry_points, mandatory for importlib_metadata v5
+FIX: (#6459) Setting timeout when adding VOMS extension
+
+*tests
+
+NEW: (#6463) added Glasgow to sites that should work(TM) in multiVO test
+NEW: (#6454) launching the Optimizers in integration-tests
+
+*Docs
+
+FIX: (#6462) Fail if one the commands cannot be documented
+
 [v8.1.0a3]
 
 *Docs
