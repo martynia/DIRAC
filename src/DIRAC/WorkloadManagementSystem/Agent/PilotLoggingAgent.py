@@ -64,7 +64,7 @@ class PilotLoggingAgent(AgentModule):
         for vo in self.voList:
             self.opsHelper = Operations(vo=vo, setup=self.setup)
             # is remote pilot logging enabled for the VO ?
-            pilotLogging = self.opsHelper.getValue("/Pilot/RemoteLogging", True)
+            pilotLogging = self.opsHelper.getValue("/Pilot/RemoteLogging", False)
             if pilotLogging:
                 res = self.opsHelper.getOptionsDict("Shifter/DataManager")
                 if not res["OK"]:

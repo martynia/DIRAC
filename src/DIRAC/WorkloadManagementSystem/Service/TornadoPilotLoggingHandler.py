@@ -5,7 +5,7 @@ import os
 from DIRAC import gLogger, S_OK, S_ERROR
 from DIRAC.ConfigurationSystem.Client.Helpers import Registry
 from DIRAC.Core.Tornado.Server.TornadoService import TornadoService
-from DIRAC.Core.DISET.RequestHandler import RequestHandler, getServiceOption
+from DIRAC.Core.DISET.RequestHandler import getServiceOption
 from DIRAC.Core.Utilities.ObjectLoader import ObjectLoader
 
 sLog = gLogger.getSubLogger(__name__)
@@ -35,7 +35,7 @@ class TornadoPilotLoggingHandler(TornadoService):
 
         componentClass = result["Value"]
         cls.loggingPlugin = componentClass()
-        cls.log.info("Loaded: PilotLoggingPlugin class", configValue)
+        cls.log.debug("Loaded: PilotLoggingPlugin class", configValue)
 
         cls.meta = {}
         logPath = os.path.join(os.getcwd(), "pilotlogs")
