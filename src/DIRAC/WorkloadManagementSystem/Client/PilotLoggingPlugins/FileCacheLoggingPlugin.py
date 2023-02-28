@@ -5,11 +5,12 @@ import os
 import json
 import re
 from DIRAC import S_OK, S_ERROR, gLogger
+from DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.PilotLoggingPlugin import PilotLoggingPlugin
 
 sLog = gLogger.getSubLogger(__name__)
 
 
-class FileCacheLoggingPlugin:
+class FileCacheLoggingPlugin(PilotLoggingPlugin):
     """
     File cache logging. Log records are appended to a file, one for each pilot.
     It is assumed that an agent will be installed together with this plugin, which will copy
@@ -36,13 +37,9 @@ class FileCacheLoggingPlugin:
         """
         File cache sendMessage method. Write the log message to a file line by line.
 
-
-        :param message: text to log in json format
-        :type message: str
-        :param pilotUUID: pilot id. Optimally it should be a pilot stamp if available, otherwise a generated UUID.
-        :type pilotUUID:  a valid pilot UUID
-        :param vo: VO name of a pilot which sent the message.
-        :type vo: str
+        :param str message: text to log in json format
+        :param str pilotUUID: pilot id. Optimally it should be a pilot stamp if available, otherwise a generated UUID.
+        :param str vo: VO name of a pilot which sent the message.
         :return: S_OK or S_ERROR
         :rtype: dict
         """
@@ -76,20 +73,16 @@ class FileCacheLoggingPlugin:
         """
         Finalise a log file. Finalised logfile can be copied to a secure location.
 
-        :param payload: additional info, a plugin might want to use (i.e. the system return code of a pilot script)
-        :type payload: dict
-        :param logfile: log filename (pilotUUID).
-        :type logfile: json representation of dict
-        :param vo: VO name of a pilot which sent the message.
-        :type vo: str
+        :param dict payload: additional info, a plugin might want to use (i.e. the system return code of a pilot script)
+        :param str logfile: log filename (pilotUUID).
+        :param str vo: VO name of a pilot which sent the message.
         :return: S_OK or S_ERROR
         :rtype: dict
         """
 
         returnCode = json.loads(payload).get("retCode", 0)
 
-        res = self._verifyUUIDPattern(logfile)
-        if not res:
+        if not self._verifyUUIDPattern(logfile):
             return S_ERROR("Pilot UUID is invalid")
 
         try:
@@ -116,8 +109,7 @@ class FileCacheLoggingPlugin:
         """
         Verify if the name of the log file matches the required pattern.
 
-        :param name: file name
-        :type name: str
+        :param str name: file name
         :return: re.match result
         :rtype: re.Match object or None.
         """
@@ -127,7 +119,7 @@ class FileCacheLoggingPlugin:
             res = self.pattern.match(logfile)
         if not res:
             sLog.error(
-                "Pilot UUID does not match the UUID or stamp pattern. ",
+                "Pilot UUID does not match the UUID nor the stamp pattern. ",
                 f"UUID: {logfile}, pilot stamp pattern {self.stamppattern}, UUID pattern {self.pattern}",
             )
         return res

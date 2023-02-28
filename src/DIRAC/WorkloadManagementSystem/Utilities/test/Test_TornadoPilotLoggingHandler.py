@@ -4,7 +4,7 @@ import os
 import json
 import tempfile
 import DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler
-from DIRAC.WorkloadManagementSystem.Service.FileCacheLoggingPlugin import FileCacheLoggingPlugin
+from DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.FileCacheLoggingPlugin import FileCacheLoggingPlugin
 from DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler import TornadoPilotLoggingHandler
 
 
@@ -14,7 +14,7 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os.path, "exists")
     def test_initializeHandlerBasic(self, mockExists, mockGetcwd, mockMakedirs):
         """
-        Test the initialiser with a BasicPilotLoggingPlugin. os.* calls used are mocked.
+        Test the initialiser with a PilotLoggingPlugin. os.* calls used are mocked.
 
         :param mockExists:
         :type mockExists:
@@ -31,7 +31,7 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
             {"csPaths": "noexistent"}
         )  # should return the default, basic plugin
         mockMakedirs.assert_called_with(os.path.join("/tornado/document/root", "pilotlogs"))
-        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "BasicPilotLoggingPlugin")
+        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "PilotLoggingPlugin")
 
         mockMakedirs.reset_mock()
         mockExists.return_value = True
@@ -40,7 +40,7 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
             {"csPaths": "noexistent"}
         )  # should return the default, basic plugin
         mockMakedirs.assert_not_called()
-        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "BasicPilotLoggingPlugin")
+        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "PilotLoggingPlugin")
 
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler, "getServiceOption")
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os, "makedirs")
@@ -64,9 +64,9 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
         self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "FileCacheLoggingPlugin")
         self.assertEqual(2, mockMakedirs.call_count)  # twice: once in the handler, once in the plugin
 
-    @patch.object(DIRAC.WorkloadManagementSystem.Service.FileCacheLoggingPlugin.os, "makedirs")
-    @patch.object(DIRAC.WorkloadManagementSystem.Service.FileCacheLoggingPlugin.os, "getcwd")
-    @patch.object(DIRAC.WorkloadManagementSystem.Service.FileCacheLoggingPlugin.os.path, "exists")
+    @patch.object(DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.FileCacheLoggingPlugin.os, "makedirs")
+    @patch.object(DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.FileCacheLoggingPlugin.os, "getcwd")
+    @patch.object(DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.FileCacheLoggingPlugin.os.path, "exists")
     def test_FileCachePlugin(self, mockExists, mockGetcwd, mockMakedirs):
         """
         Test fileCachePlugin
@@ -108,7 +108,7 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
         self.assertFalse(res["OK"])
 
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os.path, "exists")
-    @patch.object(DIRAC.WorkloadManagementSystem.Service.FileCacheLoggingPlugin.os, "getcwd")
+    @patch.object(DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.FileCacheLoggingPlugin.os, "getcwd")
     def test_getMeta(self, mockGetcwd, mockExists):
         mockExists.return_value = True  # will not create a file
         mockGetcwd.return_value = "/tornado/document/root"  # so we have a path defined
@@ -120,7 +120,7 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
         self.assertFalse(res["OK"])
 
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os.path, "exists")
-    @patch.object(DIRAC.WorkloadManagementSystem.Service.FileCacheLoggingPlugin.os, "getcwd")
+    @patch.object(DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.FileCacheLoggingPlugin.os, "getcwd")
     def test_finaliseLogs(self, mockGetcwd, mockExists):
         mockExists.return_value = True  # will not create a file
         mockGetcwd.return_value = "/tornado/document/root"  # so we have a path defined (will overwrite it below)

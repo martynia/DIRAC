@@ -57,7 +57,7 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
             self.assertEqual(res, S_OK())
             self.assertEqual(mAgent.voList, mockVOs.return_value["Value"])
             self.assertEqual(mAgent.setup, mockSetup.return_value)
-            # pilot logging on:
+            # remote pilot logging on:
             mockOp.return_value.getValue.return_value = True
             # proxy user and group:
             upDict = {
@@ -69,7 +69,8 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
             res = mAgent.execute()
             assert mockOp.called
             mockOp.assert_called_with(vo=vo, setup=mockSetup.return_value)
-            mockOp.return_value.getValue.assert_called_with("/Pilot/RemoteLogging", True)
+            mockOp.return_value.getValue.assert_called_with("/Pilot/RemoteLogging", False)
+            # we reach this only if remote pilot logging is on:
             mockOp.return_value.getOptionsDict.assert_called_with("Shifter/DataManager")
             mAgent.executeForVO.assert_called_with(
                 vo,
@@ -80,7 +81,9 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
 
             # pilot logger off, skip the VO:
             mockOp.return_value.getValue.return_value = False
+            mAgent.executeForVO.reset_mock()
             res = mAgent.execute()
+            mAgent.executeForVO.assert_not_called()
             self.assertEqual(res, S_OK())
 
             # pilot logger on, no user/group dict
@@ -111,8 +114,7 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
     @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent, "executeWithUserProxy")
     def test_executeForVO(self, mockProxy, mockTC, mockexists, mockisfile, mockremove, mocklistdir, mockDM, mockOp):
         with patch_parent(PilotLoggingAgent) as MockAgent:
-
-            opsHelperValues = {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}
+            opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}}
             mAgent = MockAgent()
             mockOp.return_value.getOptionsDict.return_value = opsHelperValues
             mAgent.opsHelper = mockOp.return_value
@@ -141,10 +143,10 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
             calls = []
             mockDM.return_value.putAndRegister.assert_called()
             for elem in mocklistdir.return_value:
-                lfn = os.path.join(opsHelperValues["UploadPath"], elem)
+                lfn = os.path.join(opsHelperValues["Value"]["UploadPath"], elem)
                 name = os.path.join(resDict["Value"]["LogPath"], vo, elem)
                 mockDM.return_value.putAndRegister.assert_any_call(
-                    lfn=lfn, fileName=name, diracSE=opsHelperValues["UploadSE"], overwrite=True
+                    lfn=lfn, fileName=name, diracSE=opsHelperValues["Value"]["UploadSE"], overwrite=True
                 )
 
             call_count = len(mocklistdir.return_value)
@@ -163,20 +165,33 @@ class PilotLoggingAgentTestCase(unittest.TestCase):
             self.assertFalse(res["OK"])
 
             # config values not correct:
-            opsHelperValues = [None, "/uploadPath", "tornadoServer"]
-            mAgent.opsHelper.getValue.side_effect = opsHelperValues
+            # no SE
+            opsHelperValues = {"OK": True, "Value": {"UploadPath": "/gridpp/uploadPath"}}
+            mAgent = MockAgent()
+            mockOp.reset_mock()
+            mAgent.opsHelper = mockOp.return_value
+            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
             res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
-
-            opsHelperValues = ["uploadSE", None, "tornadoServer"]
-            mAgent.opsHelper.getValue.side_effect = opsHelperValues
+            self.assertEqual(res["Message"], "Upload SE not defined")
+            # no upload path
+            opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE"}}
+            mAgent = MockAgent()
+            mockOp.reset_mock()
+            mAgent.opsHelper = mockOp.return_value
+            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
             res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
-
-            opsHelperValues = ["uploadSE", "uploadPath", None]
-            mAgent.opsHelper.getValue.side_effect = opsHelperValues
+            self.assertEqual(res["Message"], "Upload path on SE testUploadSE not defined")
+            # no pilot section:
+            opsHelperValues = {"OK": False}
+            mAgent = MockAgent()
+            mockOp.reset_mock()
+            mAgent.opsHelper = mockOp.return_value
+            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
             res = mAgent.executeForVO(vo=vo)
             self.assertFalse(res["OK"])
+            self.assertEqual(res["Message"], f"No pilot section for {vo} vo")
 
 
 if __name__ == "__main__":

@@ -64,7 +64,7 @@ class PilotLoggingAgent(AgentModule):
         for vo in self.voList:
             self.opsHelper = Operations(vo=vo, setup=self.setup)
             # is remote pilot logging enabled for the VO ?
-            pilotLogging = self.opsHelper.getValue("/Pilot/RemoteLogging", True)
+            pilotLogging = self.opsHelper.getValue("/Pilot/RemoteLogging", False)
             if pilotLogging:
                 res = self.opsHelper.getOptionsDict("Shifter/DataManager")
                 if not res["OK"]:
@@ -82,7 +82,9 @@ class PilotLoggingAgent(AgentModule):
                     continue
 
                 self.log.info(f"Proxy used for pilot logging: VO: {vo}, User: {proxyUser}, Group: {proxyGroup}")
-                res = self.executeForVO(vo, proxyUserName=proxyUser, proxyUserGroup=proxyGroup)
+                res = self.executeForVO(  # pylint: disable=unexpected-keyword-arg
+                    vo, proxyUserName=proxyUser, proxyUserGroup=proxyGroup
+                )
                 if not res["OK"]:
                     voRes[vo] = res["Message"]
         if voRes:

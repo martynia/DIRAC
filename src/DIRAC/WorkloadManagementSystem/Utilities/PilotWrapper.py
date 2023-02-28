@@ -81,26 +81,6 @@ class MicrosecondFormatter(logging.Formatter):
         s = "%%s,%%06dZ" %% (t, (record.created - int(record.created)) * 1e6)
     return s
 
-def sendMessage(url, method, rawMessage, pilotUUID):
-
-  message = json.dumps((json.dumps(rawMessage), pilotUUID))
-  if major >= 3:
-    data = urlencode({'method': method, 'args': message}).encode('utf-8') # encode to bytes ! for python3
-  else:
-    data = urlencode({'method': method, 'args': message})
-  caPath = os.getenv('X509_CERT_DIR')
-  cert = os.getenv('X509_USER_PROXY')
-
-  context = ssl.create_default_context()
-  context.load_verify_locations(capath=caPath)
-  context.load_cert_chain(cert)
-  try:
-    res = urlopen(url, data, context=context)
-    # logger.info(res.read().strip())
-    res.close()
-  except URLError as err:
-    logger.error(err)
-
 # setting up the logging
 # formatter = logging.Formatter(fmt='%%(asctime)s UTC %%(levelname)-8s %%(message)s', datefmt='%%Y-%%m-%%d %%H:%%M:%%S')
 formatter = MicrosecondFormatter('%%(asctime)s %%(levelname)-8s [%%(name)s] %%(message)s')

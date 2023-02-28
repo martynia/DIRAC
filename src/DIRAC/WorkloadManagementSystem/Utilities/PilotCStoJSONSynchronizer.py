@@ -9,6 +9,7 @@ import glob
 import shutil
 import tarfile
 import datetime
+from typing import Any
 
 from git import Repo
 
@@ -16,6 +17,7 @@ from DIRAC import gLogger, gConfig, S_OK
 from DIRAC.ConfigurationSystem.Client.ConfigurationData import gConfigurationData
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.ConfigurationSystem.Client.Helpers.Path import cfgPath
+from DIRAC.Core.Utilities.ReturnValues import DReturnType, DOKReturnType
 
 
 class PilotCStoJSONSynchronizer:
@@ -59,7 +61,7 @@ class PilotCStoJSONSynchronizer:
         self.pilotRepoBranch = ops.getValue("Pilot/pilotRepoBranch", self.pilotRepoBranch)
         self.pilotVORepoBranch = ops.getValue("Pilot/pilotVORepoBranch", self.pilotVORepoBranch)
 
-    def getCSDict(self, includeMasterCS: bool = True) -> dict:
+    def getCSDict(self, includeMasterCS: bool = True) -> DReturnType[Any]:
         """
         Gets minimal info for running a pilot, from the CS. The complete Operations section is
         dumped to a dictionary. A decision which VO to use will be delegated to a pilot.
@@ -153,7 +155,7 @@ class PilotCStoJSONSynchronizer:
 
         return S_OK(pilotDict)
 
-    def syncScripts(self) -> S_OK:
+    def syncScripts(self) -> DOKReturnType[Any]:
         """Clone the pilot scripts from the Pilot repositories (handle also extensions)"""
         tarFiles = []
 
