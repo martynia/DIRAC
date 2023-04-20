@@ -1,200 +1,171 @@
-import unittest
+""" Test class for PilotLoggingAgent Agent
+"""
 import os
-from contextlib import contextmanager
-from unittest.mock import MagicMock, patch, call
+import tempfile
 
-from DIRAC import gLogger, gConfig, S_OK, S_ERROR
-import DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent
+import pytest
+from unittest.mock import MagicMock
+
+# DIRAC Components
+import DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent as plaModule
 from DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent import PilotLoggingAgent
+from DIRAC import gLogger, gConfig, S_OK, S_ERROR
+
+gLogger.setLevel("DEBUG")
+
+# Mock Objects
+mockReply = MagicMock()
+mockReply1 = MagicMock()
+mockOperations = MagicMock()
+mockTornadoClient = MagicMock()
+mockDataManager = MagicMock()
+mockAM = MagicMock()
+mockNone = MagicMock()
+mockNone.return_value = None
+
+upDict = {
+    "OK": True,
+    "Value": {"User": "proxyUser", "Group": "proxyGroup"},
+}
 
 
-@contextmanager
-def patch_parent(class_):
-    """
-    Mock the bases.
-    source: https://stackoverflow.com/a/24577389/9893423
-    """
-    yield type(class_.__name__, (MagicMock,), dict(class_.__dict__))
-
-
-class PilotLoggingAgentTestCase(unittest.TestCase):
-    def setUp(self):
-        pass
-
-        self.maxDiff = None
-
-    def tearDown(self):
-        pass
-
-    @patch.object(
-        DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent,
-        "getVOs",
-        return_value={"OK": True, "Value": ["gridpp, lz"]},
+@pytest.fixture
+def plaBase(mocker):
+    mocker.patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.AgentModule.__init__")
+    mocker.patch(
+        "DIRAC.WorkloadManagementSystem.Agent.JobCleaningAgent.AgentModule._AgentModule__moduleProperties",
+        side_effect=lambda x, y=None: y,
+        create=True,
     )
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.gConfig, "getValue", return_value="GridPP")
-    def test_initialize(self, mockSetup, mockVOs):
-        with patch_parent(PilotLoggingAgent) as MockAgent:
-            mAgent = MockAgent()
-            res = mAgent.initialize()
-            self.assertEqual(mAgent.voList, mockVOs.return_value["Value"])
-            self.assertIsNotNone(mAgent.setup)
-            self.assertEqual(res, S_OK())
-
-    @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.Operations")
-    @patch.object(
-        DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent,
-        "getVOs",
-        return_value={"OK": True, "Value": ["gridpp"]},
+    mocker.patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.AgentModule.am_getOption", return_value=mockAM)
+    mocker.patch(
+        "DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.getVOs",
+        return_value={"OK": True, "Value": ["gridpp", "lz"]},
     )
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.gConfig, "getValue", return_value="GridPP")
-    @patch.object(
-        DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.PilotLoggingAgent, "executeForVO", return_value=S_OK()
+    mocker.patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.gConfig.getValue", return_value="GridPP")
+    mocker.patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.Operations.getValue", side_effect=mockReply)
+    mocker.patch(
+        "DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.Operations.getOptionsDict", side_effect=mockReply1
     )
-    def test_execute(self, mockExVO, mockSetup, mockVOs, mockOp):
-        with patch_parent(PilotLoggingAgent) as MockAgent:
-            mAgent = MockAgent()
-            res = mAgent.initialize()
-            self.assertEqual(res, S_OK())
-            self.assertEqual(mAgent.voList, mockVOs.return_value["Value"])
-            self.assertEqual(mAgent.setup, mockSetup.return_value)
-            # remote pilot logging on:
-            mockOp.return_value.getValue.return_value = True
-            # proxy user and group:
-            upDict = {
-                "OK": True,
-                "Value": {"User": "proxyUser", "Group": "proxyGroup"},
-            }
-            mockOp.return_value.getOptionsDict.return_value = upDict
-            vo = mockVOs.return_value["Value"][0]
-            res = mAgent.execute()
-            assert mockOp.called
-            mockOp.assert_called_with(vo=vo, setup=mockSetup.return_value)
-            mockOp.return_value.getValue.assert_called_with("/Pilot/RemoteLogging", False)
-            # we reach this only if remote pilot logging is on:
-            mockOp.return_value.getOptionsDict.assert_called_with("Shifter/DataManager")
-            mAgent.executeForVO.assert_called_with(
-                vo,
-                proxyUserName=upDict["Value"]["User"],
-                proxyUserGroup=upDict["Value"]["Group"],
-            )
-            self.assertEqual(res, S_OK())
-
-            # pilot logger off, skip the VO:
-            mockOp.return_value.getValue.return_value = False
-            mAgent.executeForVO.reset_mock()
-            res = mAgent.execute()
-            mAgent.executeForVO.assert_not_called()
-            self.assertEqual(res, S_OK())
-
-            # pilot logger on, no user/group dict
-            mockOp.return_value.getValue.return_value = True
-            mockOp.return_value.getOptionsDict.return_value = {"OK": False}
-            res = mAgent.execute()
-            self.assertEqual(res["OK"], False)
-            self.assertEqual(res["Message"], "Agent cycle for some VO finished with errors")
-            self.assertIn(vo, res)
-            self.assertEqual(res[vo], "No shifter defined - skipped")
-
-            # pilot logger on, no user or group defined
-            for key in ["User", "Group"]:
-                mockOp.return_value.getValue.return_value = True
-                mockOp.return_value.getOptionsDict.return_value = {"OK": True, "Value": {key: "someValue"}}
-                res = mAgent.execute()
-                self.assertEqual(res["OK"], False)
-                self.assertIn(vo, res)
-                self.assertIsNotNone(res[vo])
-
-    @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.Operations")
-    @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.DataManager")
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os, "listdir")
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os, "remove")
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os.path, "isfile")
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.os.path, "exists")
-    @patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.TornadoPilotLoggingClient")
-    @patch.object(DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent, "executeWithUserProxy")
-    def test_executeForVO(self, mockProxy, mockTC, mockexists, mockisfile, mockremove, mocklistdir, mockDM, mockOp):
-        with patch_parent(PilotLoggingAgent) as MockAgent:
-            opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}}
-            mAgent = MockAgent()
-            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
-            mAgent.opsHelper = mockOp.return_value
-            mockisfile.return_value = True
-            mocklistdir.return_value = ["file1.log", "file2.log", "file3.log"]
-            resDict = {"OK": True, "Value": {"LogPath": "/pilot/log/path/"}}
-            mockTC.return_value.getMetadata.return_value = resDict
-            vo = "gridpp"
-
-            # success route
-            res = mAgent.executeForVO(vo=vo)
-
-            mockTC.assert_called_with(useCertificates=True)
-            assert mockTC.return_value.getMetadata.called
-            mockexists.return_value = True
-            mocklistdir.assert_called_with(os.path.join(resDict["Value"]["LogPath"], vo))
-
-            calls = []
-            for elem in mocklistdir.return_value:
-                calls.append(call(os.path.join(resDict["Value"]["LogPath"], vo, elem)))
-            mockisfile.assert_has_calls(calls)
-
-            assert mockDM.called
-            mockDM.return_value.putAndRegister.return_value = {"OK": True}
-
-            calls = []
-            mockDM.return_value.putAndRegister.assert_called()
-            for elem in mocklistdir.return_value:
-                lfn = os.path.join(opsHelperValues["Value"]["UploadPath"], elem)
-                name = os.path.join(resDict["Value"]["LogPath"], vo, elem)
-                mockDM.return_value.putAndRegister.assert_any_call(
-                    lfn=lfn, fileName=name, diracSE=opsHelperValues["Value"]["UploadSE"], overwrite=True
-                )
-
-            call_count = len(mocklistdir.return_value)
-            self.assertEqual(call_count, mockDM.return_value.putAndRegister.call_count)
-            self.assertEqual(call_count, mockremove.call_count)
-            # and finally:
-            self.assertTrue(res["OK"])
-
-            # failure routes, test in the reverse order for convenience
-            # getMetadata() call failed
-            mAgent = MockAgent()
-            mAgent.opsHelper.getValue.side_effect = opsHelperValues
-            mockTC.reset_mock(return_value=True)
-            mockTC.return_value.getMetadata.return_value = {"OK": False, "Message": "Failed, sorry.."}
-            res = mAgent.executeForVO(vo=vo)
-            self.assertFalse(res["OK"])
-
-            # config values not correct:
-            # no SE
-            opsHelperValues = {"OK": True, "Value": {"UploadPath": "/gridpp/uploadPath"}}
-            mAgent = MockAgent()
-            mockOp.reset_mock()
-            mAgent.opsHelper = mockOp.return_value
-            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
-            res = mAgent.executeForVO(vo=vo)
-            self.assertFalse(res["OK"])
-            self.assertEqual(res["Message"], "Upload SE not defined")
-            # no upload path
-            opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE"}}
-            mAgent = MockAgent()
-            mockOp.reset_mock()
-            mAgent.opsHelper = mockOp.return_value
-            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
-            res = mAgent.executeForVO(vo=vo)
-            self.assertFalse(res["OK"])
-            self.assertEqual(res["Message"], "Upload path on SE testUploadSE not defined")
-            # no pilot section:
-            opsHelperValues = {"OK": False}
-            mAgent = MockAgent()
-            mockOp.reset_mock()
-            mAgent.opsHelper = mockOp.return_value
-            mockOp.return_value.getOptionsDict.return_value = opsHelperValues
-            res = mAgent.executeForVO(vo=vo)
-            self.assertFalse(res["OK"])
-            self.assertEqual(res["Message"], f"No pilot section for {vo} vo")
+    pla = PilotLoggingAgent()
+    pla.log = gLogger
+    pla._AgentModule__configDefaults = mockAM
+    return pla
 
 
-if __name__ == "__main__":
-    suite = unittest.defaultTestLoader.loadTestsFromTestCase(PilotLoggingAgentTestCase)
-    runner = unittest.TextTestRunner(verbosity=2)
-    runner.run(suite)
+@pytest.fixture
+def pla_initialised(mocker, plaBase):
+    mocker.patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.PilotLoggingAgent.executeForVO")
+    plaBase.initialize()
+    return plaBase
+
+
+@pytest.fixture
+def pla(mocker, plaBase):
+    mocker.patch(
+        "DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.TornadoPilotLoggingClient",
+        side_effect=mockTornadoClient,
+    )
+    mocker.patch("DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.Operations", side_effect=mockOperations)
+    mocker.patch(
+        "DIRAC.WorkloadManagementSystem.Agent.PilotLoggingAgent.DataManager",
+        side_effect=mockDataManager,
+    )
+    plaBase.initialize()
+    return plaBase
+
+
+def test_initialize(plaBase):
+    res = plaBase.initialize()
+    assert plaBase.voList == plaModule.getVOs()["Value"]
+    assert plaBase.setup is not None
+    assert res == S_OK()
+
+
+@pytest.mark.parametrize(
+    "mockReplyInput, expected, expectedExecOut, expected2",
+    [
+        ("/Pilot/RemoteLogging", [True, False], S_OK(), upDict),
+        ("/Pilot/RemoteLogging", [False, False], S_OK(), upDict),
+        ("/Pilot/RemoteLogging", [True, False], S_ERROR("Execute for VO failed"), upDict),
+    ],
+)
+def test_execute(pla_initialised, mockReplyInput, expected, expectedExecOut, expected2):
+    """Testing a thin version of execute (executeForVO is mocked)"""
+    assert pla_initialised.voList == plaModule.getVOs()["Value"]
+    mockReply.side_effect = expected
+    mockReply1.return_value = expected2
+    # remote pilot logging on (gridpp only) and off.
+    pla_initialised.executeForVO.return_value = expectedExecOut
+    res = pla_initialised.execute()
+    if not any(expected):
+        pla_initialised.executeForVO.assert_not_called()
+    else:
+        assert pla_initialised.executeForVO.called
+        pla_initialised.executeForVO.assert_called_with(
+            "gridpp",
+            proxyUserName=upDict["Value"]["User"],
+            proxyUserGroup=upDict["Value"]["Group"],
+        )
+    assert res["OK"] == expectedExecOut["OK"]
+
+
+@pytest.mark.parametrize(
+    "ppath, files, result",
+    [
+        ("pilot/log/path/", ["file1.log", "file2.log", "file3.log"], S_OK()),
+        ("pilot/log/path/", [], S_OK()),
+    ],
+)
+def test_executeForVO(pla, ppath, files, result):
+    opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}}
+    # full local temporary path:
+    filepath = os.path.join(tempfile.TemporaryDirectory().name, ppath)
+    # this is what getMetadata returns:
+    resDict = {"OK": True, "Value": {"LogPath": filepath}}
+    mockTornadoClient.return_value.getMetadata.return_value = resDict
+    mockDataManager.return_value.putAndRegister.return_value = result
+    print("****", filepath)
+    if files:
+        os.makedirs(os.path.join(filepath, "gridpp"), exist_ok=True)
+    for elem in files:
+        open(os.path.join(filepath, "gridpp", elem), "w")
+    mockOperations.return_value.getOptionsDict.return_value = opsHelperValues
+    pla.opsHelper = mockOperations.return_value
+    # success route
+    res = pla.executeForVO(vo="gridpp")
+    mockTornadoClient.assert_called_with(useCertificates=True)
+    assert mockTornadoClient.return_value.getMetadata.called
+    # only called with a non-empty file list:
+    if files:
+        assert mockDataManager.return_value.putAndRegister.called
+    assert res == S_OK()
+
+
+def test_executeForVOMetaFails(pla):
+    opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}}
+    mockOperations.return_value.getOptionsDict.return_value = opsHelperValues
+    pla.opsHelper = mockOperations.return_value
+    # getMetadata call fails.
+    mockTornadoClient.return_value.getMetadata.return_value = {"OK": False, "Message": "Failed, sorry.."}
+    res = pla.executeForVO(vo="anything")
+    assert res["OK"] is False
+
+
+@pytest.mark.parametrize(
+    "opsHelperValues, expectedRes",
+    [
+        ({"OK": True, "Value": {"UploadPath": "/gridpp/uploadPath"}}, S_ERROR("Upload SE not defined")),
+        ({"OK": True, "Value": {"UploadSE": "testUploadSE"}}, S_ERROR("Upload path on SE testUploadSE not defined")),
+        ({"OK": False}, S_ERROR(f"No pilot section for gridpp vo")),
+    ],
+)
+def test_executeForVOBadConfig(pla, opsHelperValues, expectedRes):
+    """Testing an incomplete configuration"""
+    mockOperations.return_value.getOptionsDict.return_value = opsHelperValues
+    pla.opsHelper = mockOperations.return_value
+    res = pla.executeForVO(vo="gridpp")
+    assert res["OK"] is False
+    assert res["Message"] == expectedRes["Message"]
+    mockTornadoClient.return_value.getMetadata.reset_mock()
+    mockTornadoClient.return_value.getMetadata.assert_not_called()

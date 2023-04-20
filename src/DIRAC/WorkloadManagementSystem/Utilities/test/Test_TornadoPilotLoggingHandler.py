@@ -12,7 +12,8 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os, "makedirs")
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os, "getcwd")
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os.path, "exists")
-    def test_initializeHandlerBasic(self, mockExists, mockGetcwd, mockMakedirs):
+    @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler, "getServiceOption")
+    def test_initializeHandlerBasic(self, mockOpt, mockExists, mockGetcwd, mockMakedirs):
         """
         Test the initialiser with a PilotLoggingPlugin. os.* calls used are mocked.
 
@@ -27,11 +28,12 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
         """
         mockExists.return_value = False  # will create a file
         mockGetcwd.return_value = "/tornado/document/root"
+        mockOpt.return_value = "FileCacheLoggingPlugin"
         TornadoPilotLoggingHandler.initializeHandler(
             {"csPaths": "noexistent"}
-        )  # should return the default, basic plugin
+        )  # should return FileCacheLoggingPlugin plugin
         mockMakedirs.assert_called_with(os.path.join("/tornado/document/root", "pilotlogs"))
-        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "PilotLoggingPlugin")
+        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "FileCacheLoggingPlugin")
 
         mockMakedirs.reset_mock()
         mockExists.return_value = True
@@ -40,7 +42,7 @@ class TornadoPilotLoggingHandlerTestCase(unittest.TestCase):
             {"csPaths": "noexistent"}
         )  # should return the default, basic plugin
         mockMakedirs.assert_not_called()
-        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "PilotLoggingPlugin")
+        self.assertEqual(TornadoPilotLoggingHandler.loggingPlugin.__class__.__name__, "FileCacheLoggingPlugin")
 
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler, "getServiceOption")
     @patch.object(DIRAC.WorkloadManagementSystem.Service.TornadoPilotLoggingHandler.os, "makedirs")

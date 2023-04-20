@@ -27,6 +27,10 @@ class PilotLoggingAgent(AgentModule):
     The agent sends completed pilot log files to permanent storage for analysis.
     """
 
+    def __init__(self, *args, **kwargs):
+        """c'tor"""
+        super().__init__(*args, **kwargs)
+
     def initialize(self):
         """
         agent's initialisation. Use this agent's CS information to:
