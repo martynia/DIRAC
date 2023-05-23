@@ -9,7 +9,7 @@ sLog = gLogger.getSubLogger(__name__)
 
 class PilotLoggingPlugin(ABC):
     """
-    Remote pilot logging bas abstract class. It defines only one abstract method used to sent messages to the server.
+    Remote pilot logging bas abstract class. It defines abstract methods used to sent messages to the server.
     Any pilot logger plugin should inherit from this class and implement a (sub)set of methods required by
     :class:`TornadoPilotLoggingHandler`.
     """

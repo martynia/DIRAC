@@ -11,6 +11,7 @@
 
 # # imports
 import os
+import time
 from DIRAC import S_OK, S_ERROR, gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs
@@ -40,7 +41,8 @@ class PilotLoggingAgent(AgentModule):
 
         :param self: self reference
         """
-
+        # pilot logs lifetime in days
+        self.clearPilotsDelay = self.am_getOption("ClearPilotsDelay", 30)
         # configured VOs and setup
         res = getVOs()
         if not res["OK"]:
@@ -133,6 +135,9 @@ class PilotLoggingAgent(AgentModule):
 
         # vo-specific source log path:
         pilotLogPath = os.path.join(resDict["Value"]["LogPath"], vo)
+        # delete old pilot log files for the vo VO
+        self.clearOldPilotLogs(pilotLogPath)
+        # check for new files and upload them
         if not os.path.exists(pilotLogPath):
             # not a disaster, the VO is enabled, but no logfiles were ever stored.
             return S_OK()
@@ -159,3 +164,29 @@ class PilotLoggingAgent(AgentModule):
                 except Exception as excp:
                     self.log.exception("Cannot remove a local file after uploading", lException=excp)
         return S_OK()
+
+    def clearOldPilotLogs(self, pilotLogPath):
+        """
+        Delete old pilot log files unconditionally.
+
+        :param int pilotLogPath: file age limit in days
+        :return: None
+        :rtype:
+        """
+
+        if not os.path.exists(pilotLogPath):
+            self.log.info(f" No VO specific directory : {pilotLogPath}, skipped")
+            return
+        files = os.listdir(pilotLogPath)
+        seconds = int(self.clearPilotsDelay) * 86400
+        currentTime = time.time()
+        os.chdir(pilotLogPath)
+
+        for file in files:
+            modifTime = os.stat(file).st_mtime
+            if modifTime < currentTime - seconds:
+                self.log.debug(f" Deleting old log : {file}")
+                try:
+                    os.remove(file)
+                except Exception as excp:
+                    self.log.exception(f"Cannot remove an old log file after {file}", lException=excp)
