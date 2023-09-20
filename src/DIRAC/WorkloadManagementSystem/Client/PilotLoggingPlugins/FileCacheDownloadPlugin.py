@@ -101,7 +101,7 @@ class FileCacheDownloadPlugin(DownloadPlugin):
         :rtype: dict
         """
 
-        res = self.tornadoClient.getLogs(logfile, vo)
+        res = self.tornadoClient.getLog(logfile, vo)
         if not res["OK"]:
-            res = self.tornadoClient.getLogs(logfile + ".log", vo)
+            res = self.tornadoClient.getLog(logfile + ".log", vo)
         return res

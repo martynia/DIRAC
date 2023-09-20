@@ -12,6 +12,7 @@
 # # imports
 import os
 import time
+import tempfile
 from DIRAC import S_OK, S_ERROR, gConfig
 from DIRAC.ConfigurationSystem.Client.Helpers.Operations import Operations
 from DIRAC.ConfigurationSystem.Client.Helpers.Registry import getVOs
@@ -124,42 +125,28 @@ class PilotLoggingAgent(AgentModule):
         self.log.info(f"Pilot upload path: {uploadPath}")
 
         client = TornadoPilotLoggingClient(useCertificates=True)
-        resDict = client.getMetadata()
+        resDict = client.getLogs(vo)
 
         if not resDict["OK"]:
             return resDict
-
-        # vo-specific source log path:
-        pilotLogPath = os.path.join(resDict["Value"]["LogPath"], vo)
-        # check for new files and upload them
-        if not os.path.exists(pilotLogPath):
-            # not a disaster, the VO is enabled, but no logfiles were ever stored.
-            return S_OK()
-        # delete old pilot log files for the vo VO
-        self.clearOldPilotLogs(pilotLogPath)
-
-        self.log.info(f"Pilot log files location = {pilotLogPath} for VO: {vo}")
-
-        # get finalised (.log) files from Tornado and upload them to the selected SE
-
-        files = [
-            f for f in os.listdir(pilotLogPath) if os.path.isfile(os.path.join(pilotLogPath, f)) and f.endswith("log")
-        ]
-
-        if not files:
-            self.log.info("No files to upload for this cycle")
-        for elem in files:
-            lfn = os.path.join(uploadPath, elem)
-            name = os.path.join(pilotLogPath, elem)
-            res = DataManager().putAndRegister(lfn=lfn, fileName=name, diracSE=uploadSE, overwrite=True)
-            if not res["OK"]:
-                self.log.error("Could not upload", f"to {uploadSE}: {res['Message']}")
+        # get all successful filename and corresponding logs, write them to temporary files and upload:
+        toBeDeleted = []
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            if not resDict["Value"]["Successful"]:
+                self.log.info("No files to upload for this cycle")
             else:
-                self.log.verbose("File uploaded: ", f"LFN = {res['Value']}")
-                try:
-                    os.remove(name)
-                except Exception as excp:
-                    self.log.exception("Cannot remove a local file after uploading", lException=excp)
+                for key, value in resDict["Value"]["Successful"].items():
+                    filename = os.path.join(tmpdirname, key)
+                    with open(filename, "w") as logfile:
+                        logfile.write(value)
+                    lfn = os.path.join(uploadPath, key)
+                    res = DataManager().putAndRegister(lfn=lfn, fileName=filename, diracSE=uploadSE, overwrite=True)
+                    if not res["OK"]:
+                        self.log.error("Could not upload", f"to {uploadSE}: {res['Message']}")
+                    else:
+                        self.log.verbose("File uploaded: ", f"LFN = {res['Value']}")
+                        toBeDeleted.append(key)
+        client.deleteLogs(toBeDeleted, vo)
         return S_OK()
 
     def clearOldPilotLogs(self, pilotLogPath):

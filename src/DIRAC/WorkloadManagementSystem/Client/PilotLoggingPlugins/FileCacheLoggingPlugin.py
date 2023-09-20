@@ -4,6 +4,7 @@ File cache logging plugin.
 import os
 import json
 import re
+import time
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.PilotLoggingPlugin import PilotLoggingPlugin
 
@@ -26,12 +27,10 @@ class FileCacheLoggingPlugin(PilotLoggingPlugin):
         self.pattern = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$")
         # pilot stamp pattern
         self.stamppattern = re.compile(r"^[0-9a-f]{32}$")
-        self.meta = {}
-        logPath = os.path.join(os.getcwd(), "pilotlogs")
-        self.meta["LogPath"] = logPath
-        if not os.path.exists(logPath):
-            os.makedirs(logPath)
-        sLog.verbose("Pilot logging directory:", logPath)
+        self._logPath = os.path.join(os.getcwd(), "pilotlogs")
+        if not os.path.exists(self._logPath):
+            os.makedirs(self._logPath)
+        sLog.verbose("Pilot logging directory:", self._logPath)
 
     def sendMessage(self, message, pilotUUID, vo):
         """
@@ -47,7 +46,7 @@ class FileCacheLoggingPlugin(PilotLoggingPlugin):
         if not self._verifyUUIDPattern(pilotUUID):
             return S_ERROR("Pilot UUID is invalid")
 
-        dirname = os.path.join(self.meta["LogPath"], vo)
+        dirname = os.path.join(self._logPath, vo)
         try:
             if not os.path.exists(dirname):
                 os.mkdir(dirname)
@@ -85,7 +84,7 @@ class FileCacheLoggingPlugin(PilotLoggingPlugin):
             return S_ERROR("Pilot UUID is invalid")
 
         try:
-            filepath = self.meta["LogPath"]
+            filepath = self._logPath
             os.rename(os.path.join(filepath, vo, logfile), os.path.join(filepath, vo, logfile + ".log"))
             sLog.info(f"Log file {logfile} finalised for pilot: (return code: {returnCode})")
             return S_OK()
@@ -93,26 +92,79 @@ class FileCacheLoggingPlugin(PilotLoggingPlugin):
             sLog.exception("Exception when finalising log")
             return S_ERROR(repr(err))
 
-    def getMeta(self):
+    def getLogs(self, vo):
         """
-        Return any metadata related to this plugin. The "LogPath" is the minimum requirement for the dict to contain.
+        Get all pilot logs for a VO from Tornado log storage area.
 
-        :return: Dirac S_OK containing the metadata or S_ERROR if the LogPath is not defined.
+        :param str vo:
+        :type vo:
+        :return: Dirac S_OK containing the logs or S_ERROR
         :rtype: dict
         """
-        if "LogPath" in self.meta:
-            return S_OK(self.meta)
-        return S_ERROR("No Pilot logging directory defined")
+        topdir = os.path.join(self._logPath, vo)
+        resultDict = {"Successful": {}, "Failed": {}}
+        files = [f for f in os.listdir(topdir) if os.path.isfile(os.path.join(topdir, f)) and f.endswith("log")]
+        for logfile in files:
+            try:
+                with open(os.path.join(topdir, logfile)) as lf:
+                    stdout = lf.read()
+                    resultDict["Successful"].update({logfile: stdout})
+            except FileNotFoundError as err:
+                sLog.error(f"Error opening a log file:{logfile}", err)
+                resultDict["Failed"].update({logfile: repr(err)})
 
-    def getLogs(self, logfile, vo):
+        return S_OK(resultDict)
+
+    def deleteLogs(self, filelist, vo):
         """
-        Get the "instant" logs from Tornado log storage area. There are not finalised (incomplete) logs.
+        Delete log files from the server cache.
+        :param list filelist: list of pilot log files to be deleted
+        :param str vo: VO name
+        :return: Dirac S_OK
+        :rtype: dict
+        """
+
+        for elem in filelist:
+            fullpath = os.path.join(self._logPath, vo, elem)
+            sLog.debug(f" Deleting pilot log : {fullpath}")
+            try:
+                os.remove(fullpath)
+            except Exception as excp:
+                sLog.exception(f"Cannot remove a log file {fullpath}", lException=excp)
+        return S_OK()
+
+    def clearLogs(self, clearPilotsDelay, vo):
+        """
+        Delete old pilot log files if older that clearPilotsDelay days
+
+        :param int pilotLogPath: maximum file age.
+        :return: None
+        :rtype: None
+        """
+
+        seconds = int(clearPilotsDelay) * 86400
+        currentTime = time.time()
+        files = os.listdir(os.path.join(self._logPath, vo))
+        for elem in files:
+            fullpath = os.path.join(self._logPath, vo, elem)
+            modifTime = os.stat(fullpath).st_mtime
+            if modifTime < currentTime - seconds:
+                self.log.debug(f" Deleting old log : {fullpath}")
+                try:
+                    os.remove(fullpath)
+                except Exception as excp:
+                    self.log.exception(f"Cannot remove an old log file after {fullpath}", lException=excp)
+        return S_OK()
+
+    def getLog(self, logfile, vo):
+        """
+        Get the "instant" pilot logs from Tornado log storage area. There are not finalised (incomplete) logs.
 
         :return:  Dirac S_OK containing the logs
         :rtype: dict
         """
 
-        filename = os.path.join(self.meta["LogPath"], vo, logfile)
+        filename = os.path.join(self._logPath, vo, logfile)
         resultDict = {}
         try:
             with open(filename) as f:

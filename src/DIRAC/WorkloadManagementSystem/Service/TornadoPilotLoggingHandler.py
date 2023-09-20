@@ -80,7 +80,43 @@ class TornadoPilotLoggingHandler(TornadoService):
         """
         return self.loggingPlugin.getMeta()
 
-    def export_getLogs(self, logfile, vo):
+    def export_getLogs(self, vo):
+        """
+        Get all pilot logfiles for a given VO.  Successful and Failed cases are grouped in separate dictionaries:
+        {"OK": True, "Successful": {filename1: log_1, filename2: log_2}, "Failed": {...}}, where log_n is a full
+        pilot log output.
+
+        :return:  S_OK containing log files
+        :rtype: dict
+        """
+
+        return self.loggingPlugin.getLogs(vo)
+
+    def export_deleteLogs(self, filelist, vo):
+        """
+        Delete log files from the server cache area.
+
+        :param list filelist: list of pilot log files to be deleted
+        :param str vo: VO name
+        :type vo:
+        :return:  S_OK
+        :rtype: dict
+        """
+
+        return self.loggingPlugin.deleteLogs(filelist, vo)
+
+    def export_clearLogs(self, vo):
+        """
+        Clear all logs for a given VO.
+
+        :param str vo: VO name
+        :return: S_OK or S_ERROR
+        :rtype: dict
+        """
+
+        return self.loggingPlugin.clearLogs(vo)
+
+    def export_getLog(self, logfile, vo):
         """
         Get (not yet finalised) logs from the server.
 
@@ -88,7 +124,7 @@ class TornadoPilotLoggingHandler(TornadoService):
         :rtype: dict
         """
 
-        return self.loggingPlugin.getLogs(logfile, vo)
+        return self.loggingPlugin.getLog(logfile, vo)
 
     def export_finaliseLogs(self, payload, pilotUUID):
         """
