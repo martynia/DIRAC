@@ -105,16 +105,17 @@ class TornadoPilotLoggingHandler(TornadoService):
 
         return self.loggingPlugin.deleteLogs(filelist, vo)
 
-    def export_clearLogs(self, vo):
+    def export_clearLogs(self, age, vo):
         """
-        Clear all logs for a given VO.
+        Clear all logs for a given VO (age based).
 
+        :param int age: file age in days
         :param str vo: VO name
         :return: S_OK or S_ERROR
         :rtype: dict
         """
 
-        return self.loggingPlugin.clearLogs(vo)
+        return self.loggingPlugin.clearLogs(age, vo)
 
     def export_getLog(self, logfile, vo):
         """

@@ -141,12 +141,12 @@ def test_executeForVO(pla, ppath, files, result):
     assert res == S_OK()
 
 
-def test_executeForVOMetaFails(pla):
+def test_executeForVOGetLogsFails(pla):
     opsHelperValues = {"OK": True, "Value": {"UploadSE": "testUploadSE", "UploadPath": "/gridpp/uploadPath"}}
     mockOperations.return_value.getOptionsDict.return_value = opsHelperValues
     pla.opsHelper = mockOperations.return_value
-    # getMetadata call fails.
-    mockTornadoClient.return_value.getMetadata.return_value = {"OK": False, "Message": "Failed, sorry.."}
+    # getLogs call fails.
+    mockTornadoClient.return_value.getLogs.return_value = {"OK": False, "Message": "Failed, sorry.."}
     res = pla.executeForVO(vo="anything")
     assert res["OK"] is False
 

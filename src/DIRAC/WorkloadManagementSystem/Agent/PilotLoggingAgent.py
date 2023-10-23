@@ -129,7 +129,7 @@ class PilotLoggingAgent(AgentModule):
 
         if not resDict["OK"]:
             return resDict
-        # get all successful filename and corresponding logs, write them to temporary files and upload:
+        # get all successful filenames and corresponding logs, write them to temporary files and upload:
         toBeDeleted = []
         with tempfile.TemporaryDirectory() as tmpdirname:
             if not resDict["Value"]["Successful"]:
@@ -147,27 +147,6 @@ class PilotLoggingAgent(AgentModule):
                         self.log.verbose("File uploaded: ", f"LFN = {res['Value']}")
                         toBeDeleted.append(key)
         client.deleteLogs(toBeDeleted, vo)
+        # delete old logs
+        client.clearLogs(self.clearPilotsDelay, vo)
         return S_OK()
-
-    def clearOldPilotLogs(self, pilotLogPath):
-        """
-        Delete old pilot log files unconditionally. Assumes that pilotLogPath exists.
-
-        :param str pilotLogPath: log files directory
-        :return: None
-        :rtype: None
-        """
-
-        files = os.listdir(pilotLogPath)
-        seconds = int(self.clearPilotsDelay) * 86400
-        currentTime = time.time()
-
-        for file in files:
-            fullpath = os.path.join(pilotLogPath, file)
-            modifTime = os.stat(fullpath).st_mtime
-            if modifTime < currentTime - seconds:
-                self.log.debug(f" Deleting old log : {fullpath}")
-                try:
-                    os.remove(fullpath)
-                except Exception as excp:
-                    self.log.exception(f"Cannot remove an old log file after {fullpath}", lException=excp)

@@ -5,6 +5,7 @@ import os
 import json
 import re
 import time
+from pathlib import Path
 from DIRAC import S_OK, S_ERROR, gLogger
 from DIRAC.WorkloadManagementSystem.Client.PilotLoggingPlugins.PilotLoggingPlugin import PilotLoggingPlugin
 
@@ -117,29 +118,38 @@ class FileCacheLoggingPlugin(PilotLoggingPlugin):
 
     def deleteLogs(self, filelist, vo):
         """
-        Delete log files from the server cache.
+        Delete log files from the server cache. The file has to be in a subdirectory of a vo-specific root.
+
         :param list filelist: list of pilot log files to be deleted
         :param str vo: VO name
-        :return: Dirac S_OK
+        :return: Dirac S_OK containing successful nad failed upload lists: {"Successful": [...], "Failed": [...]}
         :rtype: dict
         """
 
+        resultDict = {"Successful": [], "Failed": []}
         for elem in filelist:
-            fullpath = os.path.join(self._logPath, vo, elem)
-            sLog.debug(f" Deleting pilot log : {fullpath}")
+            topdir = os.path.join(self._logPath, vo)
+            fullpath = os.path.join(topdir, elem)
             try:
+                # if Path(topdir) not in Path(fullpath).resolve().parents:
+                if not Path(fullpath).resolve().is_relative_to(Path(topdir)):
+                    raise Exception
+                sLog.debug(f" Deleting pilot log : {fullpath}")
                 os.remove(fullpath)
+                resultDict["Successful"].append(fullpath)
             except Exception as excp:
                 sLog.exception(f"Cannot remove a log file {fullpath}", lException=excp)
-        return S_OK()
+                resultDict["Failed"].append(fullpath)
+        return S_OK(resultDict)
 
     def clearLogs(self, clearPilotsDelay, vo):
         """
         Delete old pilot log files if older that clearPilotsDelay days
 
-        :param int pilotLogPath: maximum file age.
-        :return: None
-        :rtype: None
+        :param int clearPilotsDelay: maximum file age.
+        :param str vo: VO name
+        :return: Dirac S_OK()
+        :rtype: dict
         """
 
         seconds = int(clearPilotsDelay) * 86400
@@ -149,11 +159,11 @@ class FileCacheLoggingPlugin(PilotLoggingPlugin):
             fullpath = os.path.join(self._logPath, vo, elem)
             modifTime = os.stat(fullpath).st_mtime
             if modifTime < currentTime - seconds:
-                self.log.debug(f" Deleting old log : {fullpath}")
+                sLog.debug(f" Deleting old log : {fullpath}")
                 try:
                     os.remove(fullpath)
                 except Exception as excp:
-                    self.log.exception(f"Cannot remove an old log file after {fullpath}", lException=excp)
+                    sLog.exception(f"Cannot remove an old log file {fullpath}", lException=excp)
         return S_OK()
 
     def getLog(self, logfile, vo):
