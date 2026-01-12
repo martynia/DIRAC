@@ -36,11 +36,11 @@ services:
         condition: service_healthy
     command: /home/dirac/LocalRepo/ALTERNATIVE_MODULES/DIRAC/tests/CI/check_rucio_db_initialized.sh
     pull_policy: always
- 
+
   rucio-init:
     profiles:
       - init
-    image: rucio/rucio-init:release-36.1.0
+    image: rucio/rucio-init:release-37.7.1
     environment:
       RUCIO_CFG_DATABASE_DEFAULT: "postgresql://rucio:secret@rucio-db/rucio"
       RUCIO_CFG_BOOTSTRAP_USERPASS_IDENTITY: "test-user"
@@ -60,7 +60,7 @@ services:
 
   rucio-server:
     hostname: rucio-server
-    image: rucio/rucio-server:release-36.1.0
+    image: rucio/rucio-server:release-37.7.1
     environment:
       RUCIO_ENABLE_SSL: "True"
       RUCIO_HTTPD_ENCODED_SLASHES: "True"
@@ -79,7 +79,7 @@ services:
 
   rucio-storage-1:
     hostname: rucio-storage-1
-    image: rucio/xrootd
+    image: rucio/test-xrootd
     environment:
       XRDPORT: "1094"
     volumes:
